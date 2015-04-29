@@ -1,0 +1,36 @@
+{
+  "name": "aStreams",
+  "version": "0.0.1",
+  "description": "streams based on ADTs and pure FP",
+  "main": "lib/index.js",
+  "browser": {
+    "es6-promise": false
+  },
+  "dependencies": {
+    "es6-promise": "^2.1.1"
+  },
+  "devDependencies": {
+    "babelify": "^6.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "babel src --out-dir lib",
+    "bundle": "browserify src/**/* -t babelify -s Stream --outfile bundle/aStreams.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yelouafi/ADTStreams.git"
+  },
+  "keywords": [
+    "javascript",
+    "streams",
+    "functional programming",
+    "promise"
+  ],
+  "author": "Yassine Elouafi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yelouafi/ADTStreams/issues"
+  },
+  "homepage": "https://github.com/yelouafi/ADTStreams"
+}
