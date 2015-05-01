@@ -42,18 +42,33 @@ Stream.prototype.mapError = function(f) {
 }
 
 // async map
-// mapP : Stream (Promise a) => Stream a
-Stream.prototype.mapP = function() { 
+// asyncMap : ( Stream a, a -> Promise a ) => Stream a
+Stream.prototype.asyncMap = function(f) { 
   return  this.isEmpty || this.isAbort ? this :
           
   this.isCons ?
     Stream.Future(
-      this.head.then( h => Stream.Cons(h, this.tail.mapP()), Stream.Abort ) 
+      f(this.head).then( h => Stream.Cons(h, this.tail.asyncMap(f)), Stream.Abort ) 
     ) :
   
   // isFuture
     Stream.Future(
-      this.promise.then( s => s.mapP(), Stream.Abort )  
+      this.promise.then( s => s.asyncMap(f), Stream.Abort )  
+    )
+}
+
+// async map
+// asyncMapError : ( Stream a, anError -> Stream a ) => Stream a
+Stream.prototype.asyncMapError = function(f) { 
+  return  this.isEmpty ? this :
+          this.isAbort ? Stream.Future( f(this.err) ) :
+          
+  this.isCons ?
+    Stream.Cons( this.head, this.tail.asyncMapError(f) ) :
+  
+  // isFuture
+    Stream.Future(
+      this.promise.then( s => s.asyncMapError(f), Stream.Abort )  
     )
 }
 
@@ -203,6 +218,82 @@ Stream.prototype.filter = function(p) {
     )
 }
 
+// span : (Stream a, a -> aBoolean) -> [Stream a, Stream a]
+Stream.prototype.span = function(p) { 
+  if( this.isEmpty || this.isAbort)
+    return [this, this];
+          
+  if(this.isCons) {
+    if( p(this.head) ) {
+      var res = this.tail.span(p);
+      return [ Stream.Cons(this.head, res[0]), res[1] ];
+    } else
+      return [Stream.Empty, this];
+  }
+  
+  // isFuture
+  var futSpan = this.promise.then( s => s.span(p), Stream.Abort );
+  return [
+      Stream.Future( futSpan.then( sp => sp[0] ) ),
+      Stream.Future( futSpan.then( sp => sp[1] ) )
+  ];
+}
+
+// groupBy : (Stream a, (a, a) -> aBoolean) => Stream (Stream a)
+Stream.prototype.groupBy = function(p) { 
+  if( this.isEmpty || this.isAbort)
+    return this;
+          
+  if(this.isCons) {
+    var span = this.tail.span( x => p(this.head, x)  );
+    return Stream.Cons(
+      Stream.Cons(this.head, span[0]),
+      span[1].groupBy(p)
+    )
+  }
+  
+  // isFuture
+  return Stream.Future( this.promise.then( s => s.groupBy(p), Stream.Abort ) );
+}
+
+// group : Stream a => Stream (Stream a)
+Stream.prototype.group = function() {
+  return this.groupBy( (x1, x2) => x1 === x2  );
+}
+
+// splitBy : (Stream a, a -> Stream a) => Stream a
+Stream.prototype.splitBy = function(f) { 
+  return ( this.isEmpty || this.isAbort) ? this :
+          
+  this.isCons ? f(this.head).concat( this.tail.splitBy(f) ) :
+  
+  // isFuture
+  Stream.Future( this.promise.then( s => s.splitBy(f), Stream.Abort ) );
+}
+
+// chunkBy : (Stream a, a, (a, a) -> [Stream a, Promise a]) => Stream a
+Stream.prototype.chunkBy = function(zero, f) { 
+  
+  return go(zero, this)
+  
+  function go(acc, me) {
+    if(me.isEmpty || me.isAbort) 
+      return zero === acc ? this : Stream.Cons(acc, this);
+    
+    if(me.isCons) {
+      var res = f(acc, me.head);
+      return res[0].concat(
+        Stream.Future(
+          res[1].then( newSeed => go(newSeed, me.tail), Stream.Abort  )  
+        )
+      )
+    }
+    
+    // isFuture
+    return Stream.Future( me.promise.then( s => go(acc, s), Stream.Abort ) );
+  }
+}
+
 // reduce : ( b, Stream a, (b, a) -> a ) => Promise b
 Stream.prototype.reduce = function(seed, f) { 
   return  this.isEmpty ? Promise.resolve(seed) :
@@ -214,6 +305,11 @@ Stream.prototype.reduce = function(seed, f) {
   
   // isFuture
     this.promise.then( s => s.reduce(seed, f), Promise.reject )  
+}
+
+// toArray : Stream a -> Promise [a]
+Stream.prototype.toArray = function() {
+  return this.reduce( [],  (xs, x) => xs.concat(x) );
 }
 
 // all : ( Stream a, a -> aBoolean ) => Promise Boolean
@@ -337,6 +433,17 @@ Stream.prototype.log = function(prefix) {
 
 // factory methods
 
+Stream.array = function(arr) {
+  
+  return from(0);
+  
+  function from(index) {
+    return index < arr.length ? 
+      Stream.Cons(arr[index], from(index+1)) :
+      Stream.Empty;
+  }
+}
+
 Stream.seq = function(arr, delay, interval) {
   return from(0, delay);
   
@@ -364,5 +471,29 @@ Stream.range = function(min, max, delay, interval) {
     return Stream.Future( getLater(getter, millis) );
   }
 }
+
+Stream.event = function(target, event, untilP) {
+
+  var nextRes, nextRej,
+      newPromise = () => new Promise((res, rej) => { nextRes = res; nextRej = rej }),
+      nextP = newPromise(),
+      listener = ev => {
+        var curRes = nextRes;
+        nextP = newPromise()
+        curRes( Stream.Cons(ev, Stream.Future(nextP)) )
+      }
+      
+  target.addEventListener(event, listener);
+  untilP.then(
+    _ =>  { 
+      target.removeEventListener(event, listener);
+      nextRes(Stream.Empty);
+    },
+    err => nextRej( Stream.Abort(err) )
+  );
+  
+  return Stream.Future( nextP );
+}
+
 
 export default Stream;

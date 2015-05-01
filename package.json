@@ -15,7 +15,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/**/* -t babelify -s Stream --outfile bundle/aStreams.js"
+    "bundle": "browserify src/**/* -t babelify --outfile bundle/aStreams.js"
   },
   "repository": {
     "type": "git",
