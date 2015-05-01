@@ -1,5 +1,7 @@
 /*global Stream Promise */
-import Stream from "../stream"
+import Stream from "../src/stream"
+
+// create chunks on line boundaries
 
 Stream.seq(['line 1\nline ', '2\nline3\n', 'line 4', ' still long\nline 5', '\nand this is a new line'], 0, 1000)
         .chunkBy( '', (prec, s) => {

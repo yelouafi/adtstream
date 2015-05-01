@@ -48,7 +48,7 @@ var _Stream = require("../stream");
 
 var _Stream2 = _interopRequireDefault(_Stream);
 
-window.aStream = _Stream2["default"];
+window.Stream = _Stream2["default"];
 
 },{"../stream":5}],4:[function(require,module,exports){
 'use strict';
@@ -135,17 +135,28 @@ Stream.prototype.mapError = function (f) {
 };
 
 // async map
-// mapP : ( Stream a, a -> Promise a ) => Stream a
-Stream.prototype.mapP = function (f) {
+// asyncMap : ( Stream a, a -> Promise a ) => Stream a
+Stream.prototype.asyncMap = function (f) {
   var _this3 = this;
 
   return this.isEmpty || this.isAbort ? this : this.isCons ? Stream.Future(f(this.head).then(function (h) {
-    return Stream.Cons(h, _this3.tail.mapP(f));
+    return Stream.Cons(h, _this3.tail.asyncMap(f));
   }, Stream.Abort)) :
 
   // isFuture
   Stream.Future(this.promise.then(function (s) {
-    return s.mapP(f);
+    return s.asyncMap(f);
+  }, Stream.Abort));
+};
+
+// async map
+// asyncMapError : ( Stream a, anError -> Stream a ) => Stream a
+Stream.prototype.asyncMapError = function (f) {
+  return this.isEmpty ? this : this.isAbort ? Stream.Future(f(this.err)) : this.isCons ? Stream.Cons(this.head, this.tail.asyncMapError(f)) :
+
+  // isFuture
+  Stream.Future(this.promise.then(function (s) {
+    return s.asyncMapError(f);
   }, Stream.Abort));
 };
 

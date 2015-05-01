@@ -1,3 +1,3 @@
 import Stream from "../stream"
 
-window.aStream = Stream;
+window.Stream = Stream;
