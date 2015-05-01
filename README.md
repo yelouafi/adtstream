@@ -24,7 +24,7 @@ Requirements
 
 In the browser, The `Stream` class is exposed in the global scope (for uses outside browserify)
 
-In the server, you can play with the examples in the `examples` directory, you can run the ES6 file directory by
+In the server, you can play with the examples in the `examples` directory, you can run the ES6 file directly by
 
 `babel-node examples/[file.js]`
 
