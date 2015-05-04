@@ -1,7 +1,9 @@
 import adt from "./adt"
-import { getLater, raceLP } from "./promise-utils"
+import { raceLP } from "./utils"
 
-var noop = () => {}, undef = noop;
+var noop = () => {}, 
+    undef = noop,
+    constt = v => () => v;
 
 
 // ADT definition
@@ -271,7 +273,7 @@ Stream.prototype.splitBy = function(f) {
   Stream.Future( this.promise.then( s => s.splitBy(f), Stream.Abort ) );
 }
 
-// chunkBy : (Stream a, a, (a, a) -> [Stream a, Promise a]) => Stream a
+// chunkBy : (Stream a, a -> [Stream a, Promise a]) => Stream a
 Stream.prototype.chunkBy = function(zero, f) { 
   
   return go(zero, this)
@@ -429,70 +431,6 @@ Stream.prototype.log = function(prefix) {
     err => console.log(prefix, ' error :', err),
     () => console.log(prefix, ' end.')
   );
-}
-
-// factory methods
-
-Stream.array = function(arr) {
-  
-  return from(0);
-  
-  function from(index) {
-    return index < arr.length ? 
-      Stream.Cons(arr[index], from(index+1)) :
-      Stream.Empty;
-  }
-}
-
-Stream.seq = function(arr, delay, interval) {
-  return from(0, delay);
-  
-  function from(index, millis) {
-    
-    var getter = () =>
-        index < arr.length ? 
-          Stream.Cons( arr[index], from(index+1, interval) ) : 
-          Stream.Empty;
-        
-    return Stream.Future( getLater(getter, millis) );
-  }
-}
-
-Stream.range = function(min, max, delay, interval) {
-  return from(min, delay);
-  
-  function from(index, millis) {
-    
-    var getter = () =>
-        index <= max ? 
-          Stream.Cons( index, from(index+1, interval) ) : 
-          Stream.Empty;
-        
-    return Stream.Future( getLater(getter, millis) );
-  }
-}
-
-Stream.event = function(target, event, untilP) {
-
-  var nextRes, nextRej,
-      newPromise = () => new Promise((res, rej) => { nextRes = res; nextRej = rej }),
-      nextP = newPromise(),
-      listener = ev => {
-        var curRes = nextRes;
-        nextP = newPromise()
-        curRes( Stream.Cons(ev, Stream.Future(nextP)) )
-      }
-      
-  target.addEventListener(event, listener);
-  untilP.then(
-    _ =>  { 
-      target.removeEventListener(event, listener);
-      nextRes(Stream.Empty);
-    },
-    err => nextRej( Stream.Abort(err) )
-  );
-  
-  return Stream.Future( nextP );
 }
 
 

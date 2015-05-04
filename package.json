@@ -4,7 +4,8 @@
   "description": "streams based on ADTs and pure FP",
   "main": "lib/index.js",
   "browser": {
-    "es6-promise": false
+    "es6-promise": false,
+    "./factory/server": false
   },
   "dependencies": {
     "es6-promise": "^2.1.1"
@@ -15,7 +16,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/**/* -t babelify --outfile bundle/aStreams.js"
+    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adts.js"
   },
   "repository": {
     "type": "git",

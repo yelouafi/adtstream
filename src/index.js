@@ -1,3 +1,10 @@
 import Stream from "./stream"
+import _0 from "./factory/common"
+import _1 from "./factory/server"
+import _2 from "./factory/browser"
+import * as utils from "./utils"
 
-module.exports = Stream;
+module.exports = {
+    Stream : Stream,
+    utils : utils
+}

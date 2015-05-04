@@ -10,13 +10,13 @@
 6 info bundle aStreams@0.0.1
 7 verbose unsafe-perm in lifecycle true
 8 info aStreams@0.0.1 Failed to exec bundle script
-9 error aStreams@0.0.1 bundle: `browserify src/**/* -t babelify --exclude src/examples/* --outfile bundle/aStreams.js`
-9 error Exit status 8
+9 error aStreams@0.0.1 bundle: `browserify src/index.js -t babelify -s adts --outfile bundle/adts.js`
+9 error Exit status 1
 10 error Failed at the aStreams@0.0.1 bundle script.
 10 error This is most likely a problem with the aStreams package,
 10 error not with npm itself.
 10 error Tell the author that this fails on your system:
-10 error     browserify src/**/* -t babelify --exclude src/examples/* --outfile bundle/aStreams.js
+10 error     browserify src/index.js -t babelify -s adts --outfile bundle/adts.js
 10 error You can get their info via:
 10 error     npm owner ls aStreams
 10 error There is likely additional logging output above.

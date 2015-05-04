@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.adts = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
 'use strict';
@@ -40,6 +40,27 @@ exports['default'] = adt;
 module.exports = exports['default'];
 
 },{}],3:[function(require,module,exports){
+'use strict';
+
+var _interopRequireDefault = function (obj) { return obj && obj.__esModule ? obj : { 'default': obj }; };
+
+var _Stream = require('../stream');
+
+var _Stream2 = _interopRequireDefault(_Stream);
+
+var _import = require('./common');
+
+var _import2 = _interopRequireDefault(_import);
+
+_Stream2['default'].domevent = function (target, event, untilP) {
+  return _Stream2['default'].event(function (listener) {
+    return target.addEventListener(event, listener);
+  }, function (listener) {
+    return target.removeEventListener(event, listener);
+  }, untilP);
+};
+
+},{"../stream":6,"./common":4}],4:[function(require,module,exports){
 "use strict";
 
 var _interopRequireDefault = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
@@ -48,37 +69,130 @@ var _Stream = require("../stream");
 
 var _Stream2 = _interopRequireDefault(_Stream);
 
-window.Stream = _Stream2["default"];
+var _getLater$raceLP$deferred = require("../utils");
 
-},{"../stream":5}],4:[function(require,module,exports){
-'use strict';
+function noop() {}
 
-Object.defineProperty(exports, '__esModule', {
-  value: true
-});
+/* factory methods common to server and browser environments */
 
-// getLater : ( () -> a, Number ) -> Promise a
-exports.getLater = getLater;
+// array : [a] -> Stream a
+_Stream2["default"].array = function (arr) {
 
-// [Promise () -> a, ...] -> Promise a
-exports.raceLP = raceLP;
-var es6Promise = require('es6-promise');
-es6Promise.polyfill && es6Promise.polyfill();
-function getLater(getter, delay) {
-  return new Promise(function (resolve) {
-    return setTimeout(function () {
-      return resolve(getter());
-    }, delay);
-  });
-}
+  return from(0);
 
-function raceLP(promises) {
-  return Promise.race(promises).then(function (lazy) {
-    return lazy();
-  });
-}
+  function from(index) {
+    return index < arr.length ? _Stream2["default"].Cons(arr[index], from(index + 1)) : _Stream2["default"].Empty;
+  }
+};
 
-},{"es6-promise":1}],5:[function(require,module,exports){
+// seq : ([a], Number, Number) -> Stream a
+_Stream2["default"].seq = function (arr, delay, interval) {
+  return from(0, delay);
+
+  function from(index, millis) {
+
+    var getter = function getter() {
+      return index < arr.length ? _Stream2["default"].Cons(arr[index], from(index + 1, interval)) : _Stream2["default"].Empty;
+    };
+
+    return _Stream2["default"].Future(_getLater$raceLP$deferred.getLater(getter, millis));
+  }
+};
+
+// range : (Number, Number, Number, Number) -> Stream Number
+_Stream2["default"].range = function (min, max, delay, interval) {
+  return from(min, delay);
+
+  function from(index, millis) {
+
+    var getter = function getter() {
+      return index <= max ? _Stream2["default"].Cons(index, from(index + 1, interval)) : _Stream2["default"].Empty;
+    };
+
+    return _Stream2["default"].Future(_getLater$raceLP$deferred.getLater(getter, millis));
+  }
+};
+
+// cps a : ( a -> () ) -> ()
+// event : (cps a, cps a, Promise a) -> Stream a
+_Stream2["default"].event = function (sub, unsub, untilP) {
+  var events = [],
+      defs = [];
+  var res = sub(slot);
+  unsub = unsub || res || noop;
+  return next();
+
+  function next() {
+    var nextE = nextEvent(),
+        onErr = function onErr(err) {
+      return function () {
+        unsub(slot);return _Stream2["default"].Abort(err);
+      };
+    },
+        nextP = !untilP ? nextE.then(function (v) {
+      return _Stream2["default"].Cons(v, next());
+    }, _Stream2["default"].Abort) : _getLater$raceLP$deferred.raceLP([untilP.then(function (_) {
+      return function () {
+        unsub(slot);return _Stream2["default"].Empty;
+      };
+    }, onErr), nextE.then(function (v) {
+      return function () {
+        return _Stream2["default"].Cons(v, next());
+      };
+    }, onErr)]);
+    return _Stream2["default"].Future(nextP);
+  }
+
+  function slot() {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    //console.log('new event')
+    if (defs.length) defs.shift().resolve(args);else events.push(args);
+  }
+  function nextEvent() {
+    if (events.length) {
+      return Promise.resolve(events.shift());
+    }var def = _getLater$raceLP$deferred.deferred();
+    defs.push(def);
+    return def.promise;
+  }
+};
+
+},{"../stream":6,"../utils":7}],5:[function(require,module,exports){
+"use strict";
+
+var _interopRequireWildcard = function (obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (typeof obj === "object" && obj !== null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } };
+
+var _interopRequireDefault = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
+
+var _Stream = require("./stream");
+
+var _Stream2 = _interopRequireDefault(_Stream);
+
+var _ = require("./factory/common");
+
+var _3 = _interopRequireDefault(_);
+
+var _4 = require("./factory/server");
+
+var _5 = _interopRequireDefault(_4);
+
+var _6 = require("./factory/browser");
+
+var _7 = _interopRequireDefault(_6);
+
+var _import = require("./utils");
+
+var utils = _interopRequireWildcard(_import);
+
+module.exports = {
+    Stream: _Stream2["default"],
+    utils: utils
+};
+
+},{"./factory/browser":3,"./factory/common":4,"./factory/server":1,"./stream":6,"./utils":7}],6:[function(require,module,exports){
 "use strict";
 
 var _interopRequireDefault = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
@@ -94,10 +208,15 @@ var _adt = require("./adt");
 
 var _adt2 = _interopRequireDefault(_adt);
 
-var _getLater$raceLP = require("./promise-utils");
+var _raceLP = require("./utils");
 
 var noop = function noop() {},
-    undef = noop;
+    undef = noop,
+    constt = function constt(v) {
+  return function () {
+    return v;
+  };
+};
 function Stream() {}
 
 _adt2["default"](Stream, {
@@ -245,7 +364,7 @@ Stream.prototype.takeUntil = function (promise) {
   return this.isEmpty || this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.takeUntil(promise)) :
 
   // isFuture
-  Stream.Future(_getLater$raceLP.raceLP([promise.then(function (_) {
+  Stream.Future(_raceLP.raceLP([promise.then(function (_) {
     return function () {
       return Stream.Empty;
     };
@@ -284,7 +403,7 @@ Stream.prototype.skipUntil = function (promise) {
   return this.isEmpty || this.isAbort ? this : this.isCons ? this.tail.skipUntil(promise) :
 
   // isFuture
-  Stream.Future(_getLater$raceLP.raceLP([this.promise.then(function (s) {
+  Stream.Future(_raceLP.raceLP([this.promise.then(function (s) {
     return function () {
       return s.skipUntil(promise);
     };
@@ -431,7 +550,7 @@ Stream.prototype.concat = function (s2) {
 Stream.prototype.merge = function (s2) {
   var _this6 = this;
 
-  return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(s1) : Stream.Future(_getLater$raceLP.raceLP([this.promise.then(function (s) {
+  return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(s1) : Stream.Future(_raceLP.raceLP([this.promise.then(function (s) {
     return function () {
       return s.merge(s2);
     };
@@ -533,72 +652,72 @@ Stream.prototype.log = function (prefix) {
   });
 };
 
-// factory methods
-
-Stream.array = function (arr) {
-
-  return from(0);
-
-  function from(index) {
-    return index < arr.length ? Stream.Cons(arr[index], from(index + 1)) : Stream.Empty;
-  }
-};
-
-Stream.seq = function (arr, delay, interval) {
-  return from(0, delay);
-
-  function from(index, millis) {
-
-    var getter = function getter() {
-      return index < arr.length ? Stream.Cons(arr[index], from(index + 1, interval)) : Stream.Empty;
-    };
-
-    return Stream.Future(_getLater$raceLP.getLater(getter, millis));
-  }
-};
-
-Stream.range = function (min, max, delay, interval) {
-  return from(min, delay);
-
-  function from(index, millis) {
-
-    var getter = function getter() {
-      return index <= max ? Stream.Cons(index, from(index + 1, interval)) : Stream.Empty;
-    };
-
-    return Stream.Future(_getLater$raceLP.getLater(getter, millis));
-  }
-};
-
-Stream.event = function (target, event, untilP) {
-
-  var nextRes,
-      nextRej,
-      newPromise = function newPromise() {
-    return new Promise(function (res, rej) {
-      nextRes = res;nextRej = rej;
-    });
-  },
-      nextP = newPromise(),
-      listener = function listener(ev) {
-    var curRes = nextRes;
-    nextP = newPromise();
-    curRes(Stream.Cons(ev, Stream.Future(nextP)));
-  };
-
-  target.addEventListener(event, listener);
-  untilP.then(function (_) {
-    target.removeEventListener(event, listener);
-    nextRes(Stream.Empty);
-  }, function (err) {
-    return nextRej(Stream.Abort(err));
-  });
-
-  return Stream.Future(nextP);
-};
-
 exports["default"] = Stream;
 
 // this.isFuture
 
-},{"./adt":2,"./promise-utils":4}]},{},[3]);
+},{"./adt":2,"./utils":7}],7:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+// getLater : ( () -> a, Number ) -> Promise a
+exports.getLater = getLater;
+
+// [Promise () -> a, ...] -> Promise a
+exports.raceLP = raceLP;
+exports.emitterOnce = emitterOnce;
+exports.deferred = deferred;
+exports.never = never;
+// the shim is used for Node verions that don't yet support Promises
+// in iojs or latest Node version with --harmony flags you can remove the following 2 lines
+// in browser builds the shim is deactivated by default (see the browser field in package.json)
+// if you need to shim in the browser
+// you can either remove the "es6-promise": false from package.json or use a compliant Promise/A+ library
+var es6Promise = require('es6-promise');
+es6Promise.polyfill && es6Promise.polyfill();
+function getLater(getter, delay) {
+  return new Promise(function (resolve) {
+    return setTimeout(function () {
+      return resolve(getter());
+    }, delay);
+  });
+}
+
+function raceLP(promises) {
+  return Promise.race(promises).then(function (lazy) {
+    return lazy();
+  });
+}
+
+function emitterOnce(emitter, eventRes, eventRej) {
+  var resP = new Promise(function (res, _) {
+    return emitter.once(eventRes, res);
+  }),
+      rejP = new Promise(function (_, rej) {
+    return emitter.once(eventRej, rej);
+  });
+
+  return Promise.race([resP, rejP]);
+}
+
+function deferred(name) {
+  var def = { name: name };
+  def.promise = new Promise(function (res, rej) {
+    def.resolve = res;
+    def.reject = rej;
+  });
+  //def.promise.then( _  => console.log(name, ' resolved') )
+  return def;
+}
+
+var neverP = new Promise(function () {});
+
+function never() {
+  return neverP;
+}
+
+},{"es6-promise":1}]},{},[5])(5)
+});

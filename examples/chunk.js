@@ -1,5 +1,5 @@
 /*global Stream Promise */
-import Stream from "../src/stream"
+import { Stream } from "../src"
 
 // create chunks on line boundaries
 
