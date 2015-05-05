@@ -36,20 +36,24 @@ In the server, you can play with the examples in the `examples` directory, you c
 
 This will compile the code in the fly and execute it.
 
-# ES6 Promise shim
+# ES6 Promise polyfill
 
-The server build uses the [`es6-promise`][2] shim to provide support for Promises (because the actual, stable versions of Node don't have Promise yet).
+##Server environments
 
-in iojs or latest Node version (with --harmony flag) you can remove the first 2 lines from `src/promise-utils.js`.
+The server build uses the [`es6-promise`][2] polyfill to provide support for Promises because actual stable versions of Node don't support Promise yet.
 
-In the browser build the shim is deactivated by default (see the browser field in package.json). 
+If you are using a server with native Promise support (iojs or latest Node version with --harmony flag) you can remove the first 2 lines from `src/promise-utils.js`.
 
-If you are using Chrome and Firefox you don't need to shim. Otherwise, you can check Promise support for you browser in [this site][3]
+##Browser environment
 
-If you need to shim in the browser you can either 
+In the browser build the polyfill is deactivated by default (see the browser field in package.json). 
 
-- remove the "es6-promise": false from package.json/browser field 
-- use a compliant Promise/A+ library
+If you are using Chrome and Firefox you don't need to polyfill. Otherwise, you can check Promise support for your browser in [this site][3]
+
+If you need to provide your own Promise support in the browser you can either 
+
+- remove the "es6-promise": false from package.json/browser field, or
+- use a compliant Promise/A+ library, or
 - Better if you can, use a modern browser
 
 
