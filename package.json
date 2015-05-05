@@ -11,12 +11,15 @@
     "es6-promise": "^2.1.1"
   },
   "devDependencies": {
-    "babelify": "^6.0.2"
+    "babel": "^5.2.13",
+    "babelify": "^6.0.2",
+    "mocha": "^2.2.4"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --compilers js:babel/register",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adts.js"
+    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adts.js",
+    "build": "npm run compile && npm run bundle"
   },
   "repository": {
     "type": "git",

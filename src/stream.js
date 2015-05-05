@@ -60,18 +60,9 @@ Stream.prototype.asyncMap = function(f) {
 }
 
 // async map
-// asyncMapError : ( Stream a, anError -> Stream a ) => Stream a
+// asyncMapError : ( Stream a, anError -> Promise (Stream a) ) => Stream a
 Stream.prototype.asyncMapError = function(f) { 
-  return  this.isEmpty ? this :
-          this.isAbort ? Stream.Future( f(this.err) ) :
-          
-  this.isCons ?
-    Stream.Cons( this.head, this.tail.asyncMapError(f) ) :
-  
-  // isFuture
-    Stream.Future(
-      this.promise.then( s => s.asyncMapError(f), Stream.Abort )  
-    )
+  return this.asyncMap( err => Stream.Future(f(err)) );
 }
 
 // length : Stream a => Promise Number
@@ -109,6 +100,24 @@ Stream.prototype.last = function() {
   
         /* isFuture */ me.promise.then( s => go(prec, s), Promise.reject );
     }
+}
+
+// at : Stream a => Promise a
+Stream.prototype.at = function(idx) { 
+  return  this.isEmpty || idx < 0 ? 
+    Promise.reject('Stream.at : End of Stream!') :
+          
+  this.isAbort ? 
+    Promise.reject(this.err) :
+  
+  this.isCons ? 
+    (idx === 0 ?
+      Promise.resolve(this.head) :
+      this.tail.at(idx-1)
+    ) :
+  
+  // isFuture
+    this.promise.then( s => s.at(idx), Stream.Abort )
 }
 
 
@@ -279,8 +288,9 @@ Stream.prototype.chunkBy = function(zero, f) {
   return go(zero, this)
   
   function go(acc, me) {
+    //console.log('acc', acc, ' isEmpty ? ', !!me.isEmpty)
     if(me.isEmpty || me.isAbort) 
-      return zero === acc ? this : Stream.Cons(acc, this);
+      return zero === acc ? this : Stream.Cons(acc, me);
     
     if(me.isCons) {
       var res = f(acc, me.head);
@@ -362,19 +372,12 @@ Stream.prototype.merge = function(s2) {
 // flatten : Stream (Stream a) => Stream a
 Stream.prototype.flatten = function() { 
   
-  return go(Stream.Empty, this);
+  return ( this.isEmpty || this.isAbort) ? this :
+          
+  this.isCons ? this.head.merge( this.tail.flatten() ) :
   
-  function go(acc, me) {
-    return  me.isEmpty || me.isAbort ? acc :
-  
-    me.isCons ?
-      go( acc.merge(me.head), me.tail ):
-      
-    // isFuture
-    acc.merge( Stream.Future(
-      me.promise.then( s => s.flatten(), Stream.Abort )  
-    ))
-  }
+  // isFuture
+    Stream.Future( this.promise.then( s => s.flatten(), Stream.Abort ) );
 }
 
 // flatMap : (Stream a, a -> Stream b) => Stream b
