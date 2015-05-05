@@ -1,8 +1,8 @@
-// the shim is used for Node verions that don't yet support Promises
-// in iojs or latest Node version with --harmony flags you can remove the following 2 lines
-// in browser builds the shim is deactivated by default (see the browser field in package.json)
-// if you need to shim in the browser
-// you can either remove the "es6-promise": false from package.json or use a compliant Promise/A+ library
+// the polyfill is used for Node verions that don't yet support Promises
+// in the browser build the polyfill is deactivated by default (see the browser field in package.json)
+// if you need to polyfill in the browser
+// you can either remove the "es6-promise": false from package.json
+// or use a compliant Promise/A+ library
 var es6Promise = require('es6-promise');
 es6Promise.polyfill &&  es6Promise.polyfill();
 

@@ -42,7 +42,7 @@ This will compile the code in the fly and execute it.
 
 The server build uses the [`es6-promise`][2] polyfill to provide support for Promises because actual stable versions of Node don't support Promise yet.
 
-If you are using a server with native Promise support (iojs or latest Node version with --harmony flag) you can remove the first 2 lines from `src/promise-utils.js`.
+If you are using a server with native Promise support (iojs or latest Node version with --harmony flag) you can remove the first 2 lines from `src/utils.js`.
 
 ##Browser environment
 
