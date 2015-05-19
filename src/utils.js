@@ -13,6 +13,10 @@ export function getLater(getter, delay) {
     resolve => setTimeout( () => resolve( getter() ), delay )
   );
 }
+
+export function delayed(val, millis) {
+  return getLater( () => val, millis)
+}
   
 // [Promise () -> a, ...] -> Promise a
 export function raceLP(promises) {

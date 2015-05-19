@@ -1,5 +1,5 @@
 import Stream from "../stream"
-import { getLater, raceLP, deferred } from "../utils"
+import { getLater, delayed, raceLP, deferred } from "../utils"
 
 function noop() {}
 
@@ -32,6 +32,21 @@ Stream.seq = function(arr, delay, interval) {
   }
 }
 
+// occs : ([(a, Number)]) -> Stream a
+Stream.occs = function(occs) {
+  var arrP = occs.map( o => delayed(o[0], o[1])  );
+  return from(0);
+  
+  function from(index) {
+    let op;
+    return index < arrP.length ? 
+      ( op = arrP[index],
+        Stream.Future( op.then( v => Stream.Cons(v, from(index+1)), Stream.Abort ) )
+      ) :
+      Stream.Empty;
+  }
+}
+
 // range : (Number, Number, Number, Number) -> Stream Number
 Stream.range = function(min, max, delay, interval) {
   return from(min, delay);
@@ -49,7 +64,7 @@ Stream.range = function(min, max, delay, interval) {
 
 // cps a : ( a -> () ) -> ()
 // event : (cps a, cps a, Promise a) -> Stream a
-Stream.event = function(sub, unsub, untilP) {
+Stream.bind = function(sub, unsub, untilP) {
   var events = [], defs = [];
   var res = sub(slot);
   unsub = unsub || res || noop;
