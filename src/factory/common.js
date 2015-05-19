@@ -5,6 +5,8 @@ function noop() {}
 
 /* factory methods common to server and browser environments */
 
+Stream.unit = v => Stream.Cons(v, Stream.Empty )
+
 // array : [a] -> Stream a
 Stream.array = function(arr) {
   

@@ -80,13 +80,13 @@ describe('Stream', () => {
   })
   
   /
-  describe('#first()', () => {
+  describe('#getHead()', () => {
     it('should return the first occurrence from a sequence', () =>
-      schedule( () => assertP.equal( Stream.seq([1,2,3], 20, 50).first(), 1 ) )
+      schedule( () => assertP.equal( Stream.seq([1,2,3], 20, 50).getHead(), 1 ) )
     )
     
     it('should reject the promise of first element if the stream is Empty', () =>
-      schedule( () => assertP.rejected( Stream.seq([], 20, 50).first() ) )
+      schedule( () => assertP.rejected( Stream.seq([], 20, 50).getHead() ) )
     )
   })
   
@@ -252,6 +252,30 @@ describe('Stream', () => {
       assertS( 
         Stream.seq([1,2,3], 0, 50).zip( Stream.seq(['a', 'b'], 25, 50) ), 
         [ [[1,'a'],25], [[2,'b'],75] ] )
+    )
+    
+    it('should wait occurrences from 2 streams to pairwise', () =>
+      assertS( 
+        Stream.Cons(1, Stream.Cons(2, Stream.Empty)).zip( Stream.seq(['a', 'b'], 25, 50) ), 
+        [ [[1,'a'],25], [[2,'b'],75] ] )
+    )
+    
+    it('should zip occurrences from multiples streams', () =>
+      assertS(
+        Stream.zip(
+          Stream.Cons(1, Stream.Cons(2, Stream.Empty)),
+          Stream.seq(['a', 'b'], 0, 50),
+          Stream.seq([true, false], 25, 50)
+        ),
+        [ [[1,'a', true],25], [[2,'b', false],75] ]
+      )
+    )
+    
+    it('should zip occurrences from one stream to a 1-element array', () =>
+      assertS(
+        Stream.zip( Stream.seq(['a', 'b'], 0, 50) ),
+        [ ['a',0], ['b',50] ]
+      )
     )
   })
   

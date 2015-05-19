@@ -1,4 +1,3 @@
-/*global Stream Promise */
 import { Stream } from "../src"
 
 // create chunks on line boundaries
@@ -10,9 +9,8 @@ Stream.seq(['line 1\nline ', '2\nline3\n', 'line 4', ' still long\nline 5', '\na
               last = lines.length - 1;
               
           return (last > 0) ?
-            [ Stream.array([].concat(prec + head, lines.slice(1, last))), Promise.resolve(lines[last]) ] :
-            [ Stream.Empty, Promise.resolve(prec + head) ];
+            [ Stream.array([].concat(prec + head, lines.slice(1, last))), lines[last] ] :
+            [ Stream.Empty, prec + head ];
         })
         .log()
     
-//logP(group, 'group');

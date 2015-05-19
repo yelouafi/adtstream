@@ -78,15 +78,27 @@ Stream.prototype.length = function() {
     return  this.reduce( (n, _) =>  n + 1, 0 )
 }
 
-// first : Stream a => Promise a
-Stream.prototype.first = function() { 
-    return  this.isEmpty ? Promise.reject('Stream.first: Empty Stream!') :
+// head : Stream a => Promise a
+Stream.prototype.getHead = function() { 
+    return  this.isEmpty ? Promise.reject('Stream.head: Empty Stream!') :
     
     this.isAbort     ? Promise.reject(this.error) :
           
     this.isCons ? Promise.resolve(this.head) :
   
-    /* isFuture */ this.promise.then( s => s.first(), Promise.reject );
+    /* isFuture */ this.promise.then( s => s.getHead(), Promise.reject );
+}
+
+// tail : Stream a => Stream a
+Stream.prototype.getTail = function() { 
+    return  this.isEmpty ? Stream.Abort('Stream.tail: Empty Stream!') :
+    
+    this.isAbort ? Stream.Abort('Stream.tail: Aborted Stream!') :
+          
+    this.isCons ? this.tail :
+  
+    /* isFuture */ 
+    Stream.Future( this.promise.then( s => s.getTail(), Stream.Abort ) );
 }
 
 // last : Stream a => Promise a
@@ -230,6 +242,30 @@ Stream.prototype.span = function(p) {
   }
 }
 
+// span : (Stream a, a -> aBool | Promise aBool) -> [Stream a, Stream a]
+Stream.prototype.break = function(p) { 
+  var s1, s2;
+  return ( this.isEmpty || this.isAbort) ? [this, this] :
+          
+  this.isCons ? splitP(
+      Promise.resolve( p(this.head) )
+      .then( ok => 
+          !ok ? 
+            ( [s1, s2] = this.tail.break(p), [Stream.Cons(this.head, s1), s2] ) : 
+            [Stream.Empty, this], 
+          Stream.Abort )) :
+   
+  // isFuture
+    splitP( this.promise.then( s => s.break(p), Stream.Abort ) )
+  
+  function splitP(p) {
+    return [
+      Stream.Future( p.then( sp => sp[0] ) ),
+      Stream.Future( p.then( sp => sp[1] ) )
+    ];
+  }
+}
+
 // groupBy : (Stream a, (a, a) -> aBool | Promise aBool) => Stream (Stream a)
 Stream.prototype.groupBy = function(p) {
   var s1, s2;
@@ -265,7 +301,7 @@ Stream.prototype.splitBy = function(f) {
 }
 
 
-// chunkBy : (Stream a, a -> [Stream a, Promise a]) => Stream a
+// chunkBy : (Stream a, a -> [Stream a, a | Promise a]) => Stream a
 Stream.prototype.chunkBy = function(zero, f) { 
   var chunks, residual;
   
@@ -281,7 +317,7 @@ Stream.prototype.chunkBy = function(zero, f) {
       ( [chunks, residual] = f(acc, me.head),
         chunks.concat(
           Stream.Future(
-            residual.then( newAcc => go(newAcc, me.tail), Stream.Abort  )  
+            Promise.resolve(residual).then( newAcc => go(newAcc, me.tail), Stream.Abort  )  
           )
         )
       ) :
@@ -410,9 +446,11 @@ Stream.prototype.zip = function(s2) {
     Stream.Cons([this.head, s2.head], this.tail.zip(s2.tail)) :
     
   this.isCons && s2.isFuture ?
-    s2.promise.then( s => this.zip(s), Stream.Abort  ) :
+    Stream.Future(
+      s2.promise.then( s => this.zip(s), Stream.Abort  )
+    ) :
     
-  // this.isFuture
+  // this.isFuture && (s2.isCons || s2.isFuture)
   Stream.Future(
     this.promise.then( s => s.zip(s2), Stream.Abort )  
   )
@@ -423,32 +461,17 @@ Stream.prototype.zipWith = function(s2, f) {
   return this.zip(s2).map( pair => f.apply(null, pair)  )
 }
 
-// event : () => Promise
-// debounce : (Stream a, event) => Stream a
-Stream.prototype.debounce1 = function(event, immediate = false) {
-  let events = [];
+// zip : [Stream a] => Stream [a]
+Stream.zip = function(...args) { 
+  return args.reduce( (ps, cs) => ps.zip(cs).map(pair => [].concat(pair[0], pair[1])) )
   
-  return !immediate ?
-    this.filter(
-      x => {
-        events.push(x);
-        return event().then( _ => events.shift() && !events.length );
-      }
-    ) :
-    this.filter(
-      x => {
-        var len = events.length;
-        events.push(x);
-        event().then( _ => events.splice(len, 1) );
-        return !len;
-      }
-    )
 }
+
 
 // event : () => Promise
 // debounce : (Stream a, event) => Stream a
 Stream.prototype.debounce = function(event, last=undef) {
-  let p;
+  
   return this.isEmpty || this.isAbort ? 
     ( last !== undef ? Stream.Cons(last, this) : this ) :
   
