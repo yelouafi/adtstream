@@ -1,36 +1,42 @@
-# ADTStreams
-
 See [Blog Post]
 
 Streams built using the following ingredients
 
 - Promises
 - Algebraic Data Types (ADT) 
-- Pure FP (Haskell like) code. 
 
-Thus the name *ADT Streams*.
+Hence the name *ADT Streams*.
 
-They can be programmed just like any other recursive ADT by pattern matching and recursion.
+# Usage
+
+In the server, install from npm
+
+    npm install adts
+    
+Then import
+
+    var Stream = require("adts").Stream;
+    
+Using the ES6 module syntax
+
+    import { Stream } from "adts";
+
+In the browser the bundle exposes a global `adts` variable, so you can use it like
+
+    var Stream = adts.Stream;
+    
 
 # Transpiling ES6 sources
 
-There are already compiled js files in the destination folders so you can skip the compile stage
+`npm install` to install dependencies; this will install dev dependencies `Babel` for ES6 transpilation and `mocha` for unit tests
 
-- for the server, in the `lib` directory
-- for the browser, in the `bundle` directory
+Run the following commands :  
+- `npm run compile` to compile for Node.js, the compiled code will go to the `lib` directory  
+- `npm run bundle` to compile for the browser, compiled code go to the `bundle`directory
 
+Or simply use `npm run build` to execute both commands.
 
-Requirements
-
-- Node.js (or iojs)
-- Install [Babel][1] : `npm install -g babel` in order to compile the ES6 code
-- Run the following commands
-    - `npm run compile` to compile for Node.js, the compiled code will go to the `lib` directory
-    - `npm run bundle`to compile for the browser, compiled code in the `bundle`directory
-
-In the browser, The `Stream` class is exposed in the global scope (for uses outside browserify)
-
-In the server, you can play with the examples in the `examples` directory, you can run the ES6 file directly by
+In the server, you can run the ES6 examples in the `examples` directory directly by
 
 `babel-node examples/[file.js]`
 
@@ -40,11 +46,11 @@ This will compile the code in the fly and execute it.
 
 ##Server environments
 
-The server build uses the [`es6-promise`][2] polyfill to provide support for Promises because actual stable versions of Node don't support Promise yet.
+The server build uses the [`es6-promise`][2] polyfill to provide support for Promises (because actual stable versions of Node don't support Promise yet).
 
 If you are using a server with native Promise support (iojs or latest Node version with --harmony flag) you can remove the first 2 lines from `src/utils.js`.
 
-##Browser environment
+##Browser environments
 
 In the browser build the polyfill is deactivated by default (see the browser field in package.json). 
 
@@ -54,7 +60,6 @@ If you need to provide your own Promise support in the browser you can either
 
 - remove the "es6-promise": false from package.json/browser field, or
 - use a compliant Promise/A+ library, or
-- Better if you can, use a modern browser
 
 
 

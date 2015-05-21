@@ -1,0 +1,29 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/home/ubuntu/.nvm/v0.10.35/bin/node',
+1 verbose cli   '/home/ubuntu/.nvm/v0.10.35/bin/npm',
+1 verbose cli   'run',
+1 verbose cli   'build' ]
+2 info using npm@1.4.28
+3 info using node@v0.10.35
+4 verbose run-script [ 'prebuild', 'build', 'postbuild' ]
+5 info prebuild aStreams@0.0.1
+6 info build aStreams@0.0.1
+7 verbose unsafe-perm in lifecycle true
+8 info aStreams@0.0.1 Failed to exec build script
+9 error aStreams@0.0.1 build: `npm run compile && npm run bundle`
+9 error Exit status 1
+10 error Failed at the aStreams@0.0.1 build script.
+10 error This is most likely a problem with the aStreams package,
+10 error not with npm itself.
+10 error Tell the author that this fails on your system:
+10 error     npm run compile && npm run bundle
+10 error You can get their info via:
+10 error     npm owner ls aStreams
+10 error There is likely additional logging output above.
+11 error System Linux 3.14.13-c9
+12 error command "/home/ubuntu/.nvm/v0.10.35/bin/node" "/home/ubuntu/.nvm/v0.10.35/bin/npm" "run" "build"
+13 error cwd /home/ubuntu/workspace
+14 error node -v v0.10.35
+15 error npm -v 1.4.28
+16 error code ELIFECYCLE
+17 verbose exit [ 1, true ]

@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+	.blink {
+		color: red;
+		animation: blink .75s linear infinite;
+		-webkit-animation: blink .75s linear infinite;
+	}
+	@-webkit-keyframes blink {
+		0% { opacity: 1; }
+		50% { opacity: 1; }
+		50.01% { opacity: 0; }
+		100% { opacity: 0; }
+	}
+</style>
+</head>
+
+<body>
+  <div>
+  	<p> Watchdog
+  		<p>
+  			<button id="order">Order</button> 
+  			<button id="done">Done</button>
+  		</p>
+  		<p>Timer <span id='timer' ></span></p>
+  		<p>Counter <span id='counter' ></span></p>
+  		<p id="alarm">Alarm <span  id="alarmText"></span></p>
+  	</p>
+  </div>
+  
+<script src="../../bundle/adts.js"></script>
+<script>
+		
+function watchdog( delay, tick, order, done ) {
+	
+	var counter = adts.Stream.merge(
+	  
+		order.const(0),		// on order start counter
+		done.const(-1),		// on done reset counter to -1
+		tick.map( function(v, prev) { 
+			return prev > -1 ? prev + 1 : -1;
+		})				// on each tick increment counter if we are inside an order	
+		
+	);
+	
+	return {
+		alarm: counter.gt(delay),
+		counter: counter,
+		paused: counter.eq(-1)
+	};
+}
+var tick 	= su.seconds(),
+	order 	= $('#order').$click(),
+	done 	= $('#done').$click(),
+	wd = watchdog( 5, tick, order, done );
+$('#done', { disabled: wd.paused });
+$('#order', { enabled: wd.paused });
+$('#timer', { text: tick });
+$('#counter', { text: wd.counter });
+$('#alarmText', {
+	text: ss.if( wd.alarm, wd.counter, 'NA' )
+});
+$('#alarm', { 
+	css: ss.obj({ blink: wd.alarm })
+});
+</script>
+</body>
+</html>

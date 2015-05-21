@@ -204,6 +204,16 @@ describe('Stream', () => {
       return assertS( ss, [["one",70], ["tow",70], ["three",120], ["four",220]])
     })
   })
+  
+  describe('#scan()', () => {
+    it('should yield accumulated results of a sequence', () =>
+      assertS( Stream.seq([1,2,3], 20, 50).scan( (p,c) => p+c, 0 ), [[1,20],[3,70], [6,120]] )
+    )
+    
+    it('should yield accumulated results of a sequence using first occurrence as seed', () =>
+      assertS( Stream.seq([1,2,3], 20, 50).scan( (p,c) => p+c ), [[1,20],[3,70], [6,120]] )
+    )
+  })
 
   describe('#toArray()', () => {
     it('should convert a sequence to an array', () =>
@@ -232,7 +242,7 @@ describe('Stream', () => {
   })
 
   describe('#merge()', () => {
-    it('should merge occurrences from to sequences', () =>
+    it('should merge occurrences from 2 sequences', () =>
       assertS( 
         Stream.seq([1,3,5], 0, 50).merge( Stream.seq([2,4], 25,50) ), 
         [[1,0],[2,25],[3,50],[4,75],[5,100]])
@@ -296,6 +306,13 @@ describe('Stream', () => {
     it('should debounce the last occurrence immediately after the stream ends', () => {
       var seq =  sch.occs([ [1,0],[2,20],[3,150],[4,200],[5,700],[6,750], ['end', 800] ]).debounce( () => sch.getLater(() => 1, 100) )
       return assertS(seq,  [ [2,120],[4,300], [6,800] ])
+    })
+  })
+  
+  describe('#throttle()', () => {
+    it('should throttle occurrences by a time delay', () => {
+      var seq =  sch.occs([ [1,0],[2,20],[3,150],[4,200],[5,700],[6,750], ['end', 1000] ]).throttle( () => sch.getLater(() => 1, 100) )
+      return assertS(seq,  [ [1,0],[3,150], [5,700] ])
     })
   })
   

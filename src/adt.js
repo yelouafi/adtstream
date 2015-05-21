@@ -1,3 +1,5 @@
+'use strict';
+
 function eachKey(obj, f) {
   for(var key in obj) {
     if( obj.hasOwnProperty(key) )
@@ -8,10 +10,10 @@ function eachKey(obj, f) {
 function adtcase (base, proto, key) {
   return (...args) => {
     var inst = new base();
-    eachKey(proto(...args), (key, val) => { inst[key] = val })
+    eachKey(proto(...args), (key, val) => { inst[key] = val });
     inst['is'+key] = true;
     return inst;
-  }
+  };
 }
  
 function adt(base, variants) {
@@ -22,7 +24,7 @@ function adt(base, variants) {
       base[key] = v;
       v['is'+key] = true;
     }
-  })
+  });
 }
 
-export default adt
+export default adt;

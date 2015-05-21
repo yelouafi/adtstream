@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <title>ADT Streams sample-up down</title>
+  </head>
+    
+  <body>  
+    <button id="up">Up</button>
+    <button id="down">Down</button>
+    <button id="stop">Stop</button>
+    <p id="output"></p>
+    
+<script src="../../bundle/adts.js"></script>
+<script>
+/* global adts */
+document.addEventListener("DOMContentLoaded", function(event) {
+    
+   var  stop = adts.$once("#stop", "click"),
+        ups = adts.$on("#up", "click", stop).map( function() { return 1 }),
+        downs = adts.$on("#down", "click", stop).map( function() { return -1 }),
+        results = ups.merge(downs).scan(function(p,c) { return p+c; })
+        
+    adts.$$('#output', {
+        innerHTML : results
+    })
+        
+});
+    
+</script>
+
+    </body>
+</html>

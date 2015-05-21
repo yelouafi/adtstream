@@ -1,14 +1,14 @@
-import Stream from "../stream"
-import { emitterOnce } from '../utils'
-import _ from './common'
+import Stream from "../stream";
+import { emitterOnce } from '../utils';
+import _ from './common';
 
 Stream.fromEmitter = function (emitter, event, untilP) {
   return Stream.bind(
     listener => emitter.on(event, listener),
     listener => emitter.removeListener(event, listener),
     untilP
-  )
-}
+  );
+};
 
 Stream.fromReadable = function (readable) {
   return Stream.fromEmitter(
@@ -16,7 +16,7 @@ Stream.fromReadable = function (readable) {
     'data',
     emitterOnce(readable, 'end', 'error')
   );
-}
+};
 
 var Readable = require('stream').Readable,
       util = require('util');
@@ -37,7 +37,7 @@ ReadableAdts.prototype._read = function() {
       return me.push(null);
     
     if(me.adts.isAbort)
-      me.emit('error', me.adts.error)
+      me.emit('error', me.adts.error);
       
     if(me.adts.isCons) {
       var head = me.adts.head;
@@ -52,11 +52,11 @@ ReadableAdts.prototype._read = function() {
       });
     }
   }
-}
+};
 
       
 Stream.prototype.toReadable = function (opt) {
   var r = new ReadableAdts(this, opt);
   r.setEncoding('utf8');
   return r;
-}
+};

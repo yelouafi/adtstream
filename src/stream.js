@@ -1,9 +1,8 @@
-import adt from "./adt"
-import { raceLP, delayed } from "./utils"
+import adt from "./adt";
+import { raceL } from "./utils";
 
 var noop = () => {}, 
-    undef = noop,
-    constt = v => () => v;
+    undef = noop;
 
 
 // ADT definition
@@ -13,7 +12,7 @@ adt( Stream, {
   Abort  : error => ({error}),
   Future : promise => ({promise}),
   Cons   : (head, tail) => ({head, tail})
-})
+});
 
 // anError : Object
 // aBool : Object (javascript truth)
@@ -34,8 +33,12 @@ Stream.prototype.map = function(f) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.map(f), Stream.Abort )  
-    )
-}
+    );
+};
+
+Stream.prototype.const = function (val) {
+  return this.map( _ => val );
+};
 
 
 // mapError : (Stream a, anError -> Stream a) => Stream a
@@ -50,8 +53,8 @@ Stream.prototype.mapError = function(f) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.mapError(f), Stream.Abort )  
-    )
-}
+    );
+};
 
 // filter : (Stream a, a -> aBool | Promise aBool) => Stream a
 Stream.prototype.filter = function(p) {
@@ -69,14 +72,14 @@ Stream.prototype.filter = function(p) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.filter(p), Stream.Abort )  
-    )
-}
+    );
+};
 
 
 // length : Stream a => Promise Number
 Stream.prototype.length = function() { 
-    return  this.reduce( (n, _) =>  n + 1, 0 )
-}
+    return  this.reduce( (n, _) =>  n + 1, 0 );
+};
 
 // head : Stream a => Promise a
 Stream.prototype.getHead = function() { 
@@ -87,7 +90,7 @@ Stream.prototype.getHead = function() {
     this.isCons ? Promise.resolve(this.head) :
   
     /* isFuture */ this.promise.then( s => s.getHead(), Promise.reject );
-}
+};
 
 // tail : Stream a => Stream a
 Stream.prototype.getTail = function() { 
@@ -99,12 +102,12 @@ Stream.prototype.getTail = function() {
   
     /* isFuture */ 
     Stream.Future( this.promise.then( s => s.getTail(), Stream.Abort ) );
-}
+};
 
 // last : Stream a => Promise a
 Stream.prototype.last = function() { 
-  return this.reduce( (_, cur) => cur )
-}
+  return this.reduce( (_, cur) => cur );
+};
 
 // at : ( Stream a, Number ) => Promise a
 Stream.prototype.at = function(idx) { 
@@ -119,8 +122,8 @@ Stream.prototype.at = function(idx) {
     ( idx === 0 ? Promise.resolve(this.head) : this.tail.at(idx-1) ) :
   
   // isFuture
-    this.promise.then( s => s.at(idx), Stream.Abort )
-}
+    this.promise.then( s => s.at(idx), Stream.Abort );
+};
 
 
 // take : (Stream a, Number ) => Stream a
@@ -135,8 +138,8 @@ Stream.prototype.take = function(n) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.take(n), Stream.Abort )  
-    )
-}
+    );
+};
 
 // takeWile : (Stream a, a -> aBool | Promise aBool) => Stream a
 Stream.prototype.takeWhile = function(p) { 
@@ -153,8 +156,8 @@ Stream.prototype.takeWhile = function(p) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.takeWhile(p), Stream.Abort )  
-    )
-}
+    );
+};
 
 // takeUntil  : (Stream a, Promise) => Stream a
 Stream.prototype.takeUntil = function(promise) { 
@@ -165,12 +168,12 @@ Stream.prototype.takeUntil = function(promise) {
         
   // isFuture
   Stream.Future(
-    raceLP([
+    raceL([
       promise.then( _ => () => Stream.Empty, Stream.Abort ),
       this.promise.then( s => () => s.takeUntil(promise), Stream.Abort )  
     ])
-  )
-}
+  );
+};
 
 // skip : (Stream a, n) => Stream a
 Stream.prototype.skip = function(n) { 
@@ -182,8 +185,8 @@ Stream.prototype.skip = function(n) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.skip(n), Stream.Abort )  
-    )
-}
+    );
+};
 
 // skipWhile : (Stream a, a -> aBool | Promise aBool) => Stream a
 Stream.prototype.skipWhile = function(p) { 
@@ -199,8 +202,8 @@ Stream.prototype.skipWhile = function(p) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.skipWhile(p), Stream.Abort )  
-    )
-}
+    );
+};
 
 // skipUntil  : (Stream a, Promise) => Stream a
 Stream.prototype.skipUntil = function(promise) {
@@ -211,12 +214,12 @@ Stream.prototype.skipUntil = function(promise) {
         
   // isFuture
   Stream.Future(
-    raceLP([
+    raceL([
       this.promise.then( s => () => s.skipUntil(promise), Stream.Abort ),
       promise.then( _ => () => this, Stream.Abort )  
     ])
-  )
-}
+  );
+};
 
 // span : (Stream a, a -> aBool | Promise aBool) -> [Stream a, Stream a]
 Stream.prototype.span = function(p) { 
@@ -232,7 +235,7 @@ Stream.prototype.span = function(p) {
           Stream.Abort )) :
    
   // isFuture
-    splitP( this.promise.then( s => s.span(p), Stream.Abort ) )
+    splitP( this.promise.then( s => s.span(p), Stream.Abort ) );
   
   function splitP(p) {
     return [
@@ -240,7 +243,7 @@ Stream.prototype.span = function(p) {
       Stream.Future( p.then( sp => sp[1] ) )
     ];
   }
-}
+};
 
 // span : (Stream a, a -> aBool | Promise aBool) -> [Stream a, Stream a]
 Stream.prototype.break = function(p) { 
@@ -256,7 +259,7 @@ Stream.prototype.break = function(p) {
           Stream.Abort )) :
    
   // isFuture
-    splitP( this.promise.then( s => s.break(p), Stream.Abort ) )
+    splitP( this.promise.then( s => s.break(p), Stream.Abort ) );
   
   function splitP(p) {
     return [
@@ -264,7 +267,7 @@ Stream.prototype.break = function(p) {
       Stream.Future( p.then( sp => sp[1] ) )
     ];
   }
-}
+};
 
 // groupBy : (Stream a, (a, a) -> aBool | Promise aBool) => Stream (Stream a)
 Stream.prototype.groupBy = function(p) {
@@ -282,12 +285,12 @@ Stream.prototype.groupBy = function(p) {
   
   // isFuture
     Stream.Future( this.promise.then( s => s.groupBy(p), Stream.Abort ) );
-}
+};
 
 // group : Stream a => Stream (Stream a)
 Stream.prototype.group = function() {
   return this.groupBy( (x1, x2) => x1 === x2  );
-}
+};
 
 // splitBy : (Stream a, a -> Stream a) => Stream a
 Stream.prototype.splitBy = function(f) {
@@ -298,14 +301,14 @@ Stream.prototype.splitBy = function(f) {
   
   // isFuture
   Stream.Future( this.promise.then( s => s.splitBy(f), Stream.Abort ) );
-}
+};
 
 
 // chunkBy : (Stream a, a -> [Stream a, a | Promise a]) => Stream a
 Stream.prototype.chunkBy = function(zero, f) { 
   var chunks, residual;
   
-  return go(zero, this)
+  return go(zero, this);
   
   function go(acc, me) {
 
@@ -325,7 +328,7 @@ Stream.prototype.chunkBy = function(zero, f) {
     // isFuture
       Stream.Future( me.promise.then( s => go(acc, s), Stream.Abort ) );
   }
-}
+};
 
 // reduce : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) => Promise b
 Stream.prototype.reduce = function(f, seed = undef) {
@@ -341,18 +344,43 @@ Stream.prototype.reduce = function(f, seed = undef) {
     ( seed === undef ? 
         this.tail.reduce(f, this.head) :
         Promise.resolve(seed)
-          .then(acc => this.tail.reduce( f, f(seed, this.head) ), Promise.reject)
+          .then(acc => this.tail.reduce( f, f(acc, this.head) ), Promise.reject)
     ) :
    
   
   // isFuture
-    this.promise.then( s => s.reduce(f, seed), Promise.reject )  
-}
+    this.promise.then( s => s.reduce(f, seed), Promise.reject );
+};
+
+// scan : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) => Stream b
+Stream.prototype.scan = function(f, seed = undef) { 
+  let acc1;
+  
+  return  ( this.isEmpty || this.isAbort ) ? this :
+
+  
+  this.isCons ?
+    ( seed === undef ? 
+        Stream.Cons(this.head, this.tail.scan(f, this.head) ) :
+        Stream.Future(  
+          Promise.resolve(seed)
+            .then(acc => (
+                acc1 = f(acc, this.head),
+                Stream.Cons(acc1, this.tail.scan( f, acc1 ))
+              ), Stream.Abort)
+          )
+    ) :
+  
+  // isFuture
+    Stream.Future(
+      this.promise.then( s => s.scan(f, seed), Stream.Abort )  
+    );
+};
 
 // toArray : Stream a -> Promise [a]
 Stream.prototype.toArray = function() {
   return this.reduce( (xs, x) => xs.concat(x), [] );
-}
+};
 
 // all : ( Stream a, a -> aBool | Promise aBool ) => Promise Boolean
 Stream.prototype.all = function(pred)  {
@@ -361,7 +389,7 @@ Stream.prototype.all = function(pred)  {
       Promise.resolve(pred(cur)).then( ok =>  prev && !!ok, Promise.reject ), 
     true
   );
-}
+};
 
 // any : ( Stream a, a -> aBool | Promise aBool ) => Promise Boolean
 Stream.prototype.any = function(pred)  {
@@ -376,12 +404,12 @@ Stream.prototype.any = function(pred)  {
   
   /* isFuture */
     this.promise.then( s => s.any(pred) );
-}
+};
 
 // join : ( Stream a, a) => Promise a
 Stream.prototype.join = function(sep = ', ')  {
   return this.reduce( (prev, cur) => prev + sep + cur );
-}
+};
 
 // concat : (Stream a, Stream a) => Stream a
 Stream.prototype.concat = function(s2) { 
@@ -395,8 +423,8 @@ Stream.prototype.concat = function(s2) {
   // isFuture
     Stream.Future(
       this.promise.then( s => s.concat(s2), Stream.Abort )  
-    )
-}
+    );
+};
 
 // merge : (Stream a, Stream a) => Stream a
 Stream.prototype.merge = function(s2) { 
@@ -411,13 +439,18 @@ Stream.prototype.merge = function(s2) {
   (!s2.isFuture ? 
     s2.merge(this) :
     Stream.Future(
-      raceLP([
+      raceL([
         this.promise.then(s => () => s.merge(s2), Stream.Abort),
         s2.promise.then(s => () => s.merge(this), Stream.Abort)
       ])
     )
-  )
-}
+  );
+};
+
+// Stream#merge : [Stream a] -> Stream a
+Stream.merge = function (...args) {
+  return args.reduce( (ps, cs) => ps.merge(cs) );
+};
 
 // flatten : Stream (Stream a) => Stream a
 Stream.prototype.flatten = function() { 
@@ -428,12 +461,12 @@ Stream.prototype.flatten = function() {
   
   // isFuture
     Stream.Future( this.promise.then( s => s.flatten(), Stream.Abort ) );
-}
+};
 
 // flatMap : (Stream a, a -> Stream b) => Stream b
 Stream.prototype.flatMap = function(f) {
   return this.map(f).flatten();
-}
+};
 
 // zip : (Stream a, Stream b) => Stream [a,b]
 Stream.prototype.zip = function(s2) { 
@@ -453,19 +486,19 @@ Stream.prototype.zip = function(s2) {
   // this.isFuture && (s2.isCons || s2.isFuture)
   Stream.Future(
     this.promise.then( s => s.zip(s2), Stream.Abort )  
-  )
-}
+  );
+};
 
 // zipWith : (Stream a, Stream b, (a, b) -> c | Promise c) => Stream c
 Stream.prototype.zipWith = function(s2, f) {
-  return this.zip(s2).map( pair => f.apply(null, pair)  )
-}
+  return this.zip(s2).map( pair => f.apply(null, pair)  );
+};
 
 // zip : [Stream a] => Stream [a]
 Stream.zip = function(...args) { 
-  return args.reduce( (ps, cs) => ps.zip(cs).map(pair => [].concat(pair[0], pair[1])) )
+  return args.reduce( (ps, cs) => ps.zip(cs).map(pair => [].concat(pair[0], pair[1])) );
   
-}
+};
 
 
 // event : () => Promise
@@ -480,13 +513,27 @@ Stream.prototype.debounce = function(event, last=undef) {
   // this.isFuture
   ( last === undef ? 
       Stream.Future(this.promise.then( s => s.debounce(event), Stream.Abort )) :
-      Stream.Future(raceLP([
+      Stream.Future(raceL([
         event().then( _ => () => Stream.Cons(last, this.debounce(event, undef)), Stream.Abort ),
         this.promise.then( s => () => s.debounce(event, last), Stream.Abort  )
       ]))
-  )
+  );
   
-}
+};
+
+// event : () => Promise
+// throttle : (Stream a, event) => Stream a
+Stream.prototype.throttle = function(event) {
+  
+  return this.isEmpty || this.isAbort ? this :
+  
+  this.isCons ? 
+    Stream.Cons( this.head, this.tail.skipUntil(event()).throttle(event) ) :
+  
+  // this.isFuture
+  Stream.Future( this.promise.then( s => s.throttle(event), Stream.Abort ) );
+  
+};
 
 
 Stream.prototype.forEach = function(onNext, onError=noop, onComplete=noop) { 
@@ -505,7 +552,7 @@ Stream.prototype.forEach = function(onNext, onError=noop, onComplete=noop) {
       stream => stream.forEach(onNext, onError, onComplete),
       onError
     );
-}
+};
 
 Stream.prototype.log = function(prefix) {
   this.forEach(
@@ -513,7 +560,7 @@ Stream.prototype.log = function(prefix) {
     err => console.log(prefix, ' error :', err),
     () => console.log(prefix, ' end.')
   );
-}
+};
 
 
 export default Stream;

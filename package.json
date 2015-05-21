@@ -1,6 +1,6 @@
 {
-  "name": "aStreams",
-  "version": "0.0.1",
+  "name": "adts",
+  "version": "0.0.0",
   "description": "streams based on ADTs and pure FP",
   "main": "lib/index.js",
   "browser": {
