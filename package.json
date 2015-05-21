@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yelouafi/ADTStreams.git"
+    "url": "https://github.com/yelouafi/adts.git"
   },
   "keywords": [
     "javascript",
@@ -35,7 +35,7 @@
   "email": "yelouafi@gmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yelouafi/ADTStreams/issues"
+    "url": "https://github.com/yelouafi/adts/issues"
   },
-  "homepage": "https://github.com/yelouafi/ADTStreams"
+  "homepage": "https://github.com/yelouafi/adts"
 }
