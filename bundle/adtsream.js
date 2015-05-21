@@ -6,6 +6,8 @@
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
+'use strict';
+
 function eachKey(obj, f) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) f(key, obj[key]);
@@ -99,6 +101,24 @@ utils.nextDOMEvent = function (target, event) {
   });
 };
 
+var props = {
+  text: function text(el, v) {
+    return el.textContent = v.toString();
+  },
+  html: function html(el, v) {
+    return el.innerHTML = v.toString();
+  },
+  disabled: function disabled(el, v) {
+    return el.disabled = !!v;
+  },
+  enabled: function enabled(el, v) {
+    return el.disabled = !v;
+  },
+  visible: function visible(el, v) {
+    return !v ? el.style.display = 'none' : el.style.removeProperty('display');
+  }
+};
+
 utils.$update = function (target, config) {
   target = dom(target);
 
@@ -122,8 +142,7 @@ var _getLater$delayed$raceLP$deferred = require("../utils");
 
 function noop() {}
 
-/* factory methods common to server and browser environments */
-
+// unit : a -> Stream a
 _Stream2["default"].unit = function (v) {
   return _Stream2["default"].Cons(v, _Stream2["default"].Empty);
 };
@@ -138,7 +157,7 @@ _Stream2["default"].array = function (arr) {
   }
 };
 
-// timer : ( Number, count ) => Stream Number
+// timer : ( Number, count ) -> Stream Number
 _Stream2["default"].timer = function (interval, count) {
   var iv = undefined,
       clear = undefined,
@@ -155,7 +174,7 @@ _Stream2["default"].timer = function (interval, count) {
   }, p);
 };
 
-// timer : ( Number, count ) => Stream Number
+// timer : ( Number, count ) -> Stream Number
 _Stream2["default"].seconds = function (count) {
   var now = Date.now();
   return _Stream2["default"].timer(1000, count).map(function (t) {
@@ -307,15 +326,10 @@ var _adt = require("./adt");
 
 var _adt2 = _interopRequireDefault(_adt);
 
-var _raceLP$delayed = require("./utils");
+var _raceL = require("./utils");
 
 var noop = function noop() {},
-    undef = noop,
-    constt = function constt(v) {
-  return function () {
-    return v;
-  };
-};
+    undef = noop;
 function Stream() {}
 
 _adt2["default"](Stream, {
@@ -458,7 +472,7 @@ Stream.prototype.takeUntil = function (promise) {
   return this.isEmpty || this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.takeUntil(promise)) :
 
   // isFuture
-  Stream.Future(_raceLP$delayed.raceLP([promise.then(function (_) {
+  Stream.Future(_raceL.raceL([promise.then(function (_) {
     return function () {
       return Stream.Empty;
     };
@@ -501,7 +515,7 @@ Stream.prototype.skipUntil = function (promise) {
   return this.isEmpty || this.isAbort ? this : this.isCons ? this.tail.skipUntil(promise) :
 
   // isFuture
-  Stream.Future(_raceLP$delayed.raceLP([this.promise.then(function (s) {
+  Stream.Future(_raceL.raceL([this.promise.then(function (s) {
     return function () {
       return s.skipUntil(promise);
     };
@@ -708,7 +722,7 @@ Stream.prototype.concat = function (s2) {
 Stream.prototype.merge = function (s2) {
   var _this11 = this;
 
-  return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(this) : Stream.Future(_raceLP$delayed.raceLP([this.promise.then(function (s) {
+  return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(this) : Stream.Future(_raceL.raceL([this.promise.then(function (s) {
     return function () {
       return s.merge(s2);
     };
@@ -719,6 +733,7 @@ Stream.prototype.merge = function (s2) {
   }, Stream.Abort)]));
 };
 
+// Stream#merge : [Stream a] -> Stream a
 Stream.merge = function () {
   for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
     args[_key] = arguments[_key];
@@ -788,7 +803,7 @@ Stream.prototype.debounce = function (event) {
 
   return this.isEmpty || this.isAbort ? last !== undef ? Stream.Cons(last, this) : this : this.isCons ? this.tail.debounce(event, this.head) : last === undef ? Stream.Future(this.promise.then(function (s) {
     return s.debounce(event);
-  }, Stream.Abort)) : Stream.Future(_raceLP$delayed.raceLP([event().then(function (_) {
+  }, Stream.Abort)) : Stream.Future(_raceL.raceL([event().then(function (_) {
     return function () {
       return Stream.Cons(last, _this13.debounce(event, undef));
     };
@@ -797,6 +812,18 @@ Stream.prototype.debounce = function (event) {
       return s.debounce(event, last);
     };
   }, Stream.Abort)]));
+};
+
+// event : () => Promise
+// throttle : (Stream a, event) => Stream a
+Stream.prototype.throttle = function (event) {
+
+  return this.isEmpty || this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.skipUntil(event()).throttle(event)) :
+
+  // this.isFuture
+  Stream.Future(this.promise.then(function (s) {
+    return s.throttle(event);
+  }, Stream.Abort));
 };
 
 Stream.prototype.forEach = function (onNext) {
@@ -836,18 +863,30 @@ Object.defineProperty(exports, '__esModule', {
 
 // getLater : ( () -> a, Number ) -> Promise a
 exports.getLater = getLater;
-exports.delayed = delayed;
 
-// [Promise () -> a, ...] -> Promise a
-exports.raceLP = raceLP;
+// delayed : (a, Number) -> Promise a
+exports.delay = delay;
+
+// [Promise () -> a] -> Promise a
+exports.raceL = raceL;
+
+// emitterOnce : ( EventEmitter, String, String) -> Promise a
 exports.emitterOnce = emitterOnce;
+
+// deferred : () -> { resolve: a -> (), reject: a -> (), promise: Promise a }
 exports.deferred = deferred;
+
+// never : () -> Promise
 exports.never = never;
-// the polyfill is used for Node verions that don't yet support Promises
-// in the browser build the polyfill is deactivated by default (see the browser field in package.json)
-// if you need to polyfill in the browser
-// you can either remove the "es6-promise": false from package.json
-// or use a compliant Promise/A+ library
+/*
+the polyfill is used for Node verions that don't yet support Promises (like node 0.10.x versions)
+- In the server, you can remove the 2 lines below if your environments includes native support for Promises
+- In the browser build the polyfill is deactivated by default (see the browser field in package.json)
+if you need to polyfill in the browser you can either :
+  1- remove the "es6-promise": false from package.json
+  2- use a compliant Promise/A+ library
+*/
+
 var es6Promise = require('es6-promise');
 es6Promise.polyfill && es6Promise.polyfill();
 function getLater(getter, delay) {
@@ -858,13 +897,13 @@ function getLater(getter, delay) {
   });
 }
 
-function delayed(val, millis) {
+function delay(val, millis) {
   return getLater(function () {
     return val;
   }, millis);
 }
 
-function raceLP(promises) {
+function raceL(promises) {
   return Promise.race(promises).then(function (lazy) {
     return lazy();
   });
@@ -881,18 +920,16 @@ function emitterOnce(emitter, eventRes, eventRej) {
   return Promise.race([resP, rejP]);
 }
 
-function deferred(name) {
-  var def = { name: name };
+function deferred() {
+  var def = {};
   def.promise = new Promise(function (res, rej) {
     def.resolve = res;
     def.reject = rej;
   });
-  //def.promise.then( _  => console.log(name, ' resolved') )
   return def;
 }
 
 var neverP = new Promise(function () {});
-
 function never() {
   return neverP;
 }

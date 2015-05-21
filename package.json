@@ -1,5 +1,5 @@
 {
-  "name": "adts",
+  "name": "adtstream",
   "version": "0.0.1",
   "description": "streams based on ADTs and pure FP",
   "main": "lib/index.js",
@@ -18,12 +18,12 @@
   "scripts": {
     "test": "mocha --compilers js:babel/register",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adts.js",
+    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adtsream.js",
     "build": "npm run compile && npm run bundle"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yelouafi/adts.git"
+    "url": "https://github.com/yelouafi/adtstream.git"
   },
   "keywords": [
     "javascript",
@@ -35,7 +35,7 @@
   "email": "yelouafi@gmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yelouafi/adts/issues"
+    "url": "https://github.com/yelouafi/adtstream/issues"
   },
-  "homepage": "https://github.com/yelouafi/adts"
+  "homepage": "https://github.com/yelouafi/adtstream"
 }

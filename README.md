@@ -11,15 +11,15 @@ Hence the name *ADT Streams*.
 
 In the server, install from npm
 
-    npm install adts
+    npm install adtstream
     
 Then import
 
-    var Stream = require("adts").Stream;
+    var Stream = require("adtstream").Stream;
     
 Using the ES6 module syntax
 
-    import { Stream } from "adts";
+    import { Stream } from "adtstream";
 
 In the browser the bundle exposes a global `adts` variable, so you can use it like
 
