@@ -80,13 +80,13 @@ describe('Stream', () => {
   })
   
   /
-  describe('#getHead()', () => {
+  describe('#first()', () => {
     it('should return the first occurrence from a sequence', () =>
-      schedule( () => assertP.equal( Stream.seq([1,2,3], 20, 50).getHead(), 1 ) )
+      schedule( () => assertP.equal( Stream.seq([1,2,3], 20, 50).first(), 1 ) )
     )
     
     it('should reject the promise of first element if the stream is Empty', () =>
-      schedule( () => assertP.rejected( Stream.seq([], 20, 50).getHead() ) )
+      schedule( () => assertP.rejected( Stream.seq([], 20, 50).first() ) )
     )
   })
   
@@ -248,12 +248,12 @@ describe('Stream', () => {
         [[1,0],[2,25],[3,50],[4,75],[5,100]])
     )
   })
-
-  describe('#flatMap()', () => {
-    it('should map occurrences to subsequences and merge the results', () =>
+  
+  describe('#relay()', () => {
+    it('should yield occurrences from a sequence until another sequence begins yielding', () =>
       assertS( 
-        Stream.seq([1,2,3], 0, 50).flatMap( n => Stream.range(1, n, Math.max(0, n-2)*50, 50) ), 
-        [[1,0],[1,50],[2,100],[1,150],[2,200],[3,250]] )
+        Stream.seq([1,2,5], 0, 20).relay( Stream.seq([3,4], 25,50) ), 
+        [[1,0],[2,20],[3,25],[4,75]])
     )
   })
 
@@ -269,33 +269,33 @@ describe('Stream', () => {
         Stream.Cons(1, Stream.Cons(2, Stream.Empty)).zip( Stream.seq(['a', 'b'], 25, 50) ), 
         [ [[1,'a'],25], [[2,'b'],75] ] )
     )
-    
-    it('should zip occurrences from multiples streams', () =>
-      assertS(
-        Stream.zip(
-          Stream.Cons(1, Stream.Cons(2, Stream.Empty)),
-          Stream.seq(['a', 'b'], 0, 50),
-          Stream.seq([true, false], 25, 50)
-        ),
-        [ [[1,'a', true],25], [[2,'b', false],75] ]
-      )
-    )
-    
-    it('should zip occurrences from one stream to a 1-element array', () =>
-      assertS(
-        Stream.zip( Stream.seq(['a', 'b'], 0, 50) ),
-        [ ['a',0], ['b',50] ]
-      )
+  })
+  
+  describe('#mergeMap()', () => {
+    it('should map occurrences to subsequences and merge the results', () =>
+      assertS( 
+        Stream.seq([1,2,3], 0, 5).mergeMap( n => Stream.range(1, n, 100, 20) ), 
+        [[1,100],[1,105],[1,110],[2,125],[2,130],[3,150]] )
     )
   })
   
-  describe('#zipWith()', () => {
-    it('should sum occurrences of 2 sequences', () =>
+  describe('concatMap()', () => {
+    it('should map occurrences to subsequences and concat the results', () =>
       assertS( 
-        Stream.seq([1,2,3], 0, 50).zipWith( Stream.seq([11,12,13], 25, 50), (x, y) => x + y ), 
-        [ [12,25], [14,75], [16,125] ] )
+        Stream.seq([1,2,3], 0, 5).concatMap( n => Stream.range(1, n, 100, 20) ), 
+        [[1,100],[1,120],[2,125],[1,145], [2,145],[3,150]] )
     )
   })
+  
+  describe('#relayMap()', () => {
+    it('should map occurrences to subsequences and relay the results', () =>
+      assertS( 
+        Stream.seq([1,2,3], 0, 5).relayMap( n => Stream.range(1, n, 100, 20) ), 
+        [[1,100],[1,105],[1,110],[2,130],[3,150]] )
+    )
+  })
+  
+  
   
   describe('#debounce()', () => {
     it('should debounce occurrences by a time delay', () => {
