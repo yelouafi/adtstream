@@ -20,11 +20,45 @@ Then import
 Using the ES6 module syntax
 
     import { Stream } from "adtstream";
+    
+In Node, you can create a stream from redeable Node stream
+
+    Stream.fromReadable( fs.createReadStream('test.txt') ).log('file')
+
+You can also create a Stream from a Node EventEmitter
+
+    var server = http.createServer();
+    Stream.fromEmitter(server, 'request')
+    
+Using the generic `Stream.bind()` method you can implement your own stream
+
+    Stream.bind(subscribe, unsubscribe, untilP)
+    
+The subscribes to an event source using the 1st argument, and yields results from the event until the ending promise (the 3rd argument) completes then unsubscribes using the 2nd argument
+
+For example here is how Streams are built from DOM events
+
+    Stream.fromDomTarget = function (target, event, untilP) {
+      return Stream.bind(
+        listener => target.addEventListener(event, listener),
+        listener => target.removeEventListener(event, listener),
+        untilP
+      );
+    };
 
 In the browser the bundle exposes a global `adts` variable, so you can use it like
 
     var Stream = adts.Stream;
     
+Then you can create streams from dom events with the helper method `on`
+
+    adts.$on(document, 'keydown').filter( e => e.keyCode === 17 ).log('key')
+    
+You can also use selectors in place of DOM objects
+
+    adts.$on('#button', 'click').log('click')
+    
+
 
 # Transpiling ES6 sources
 

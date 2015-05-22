@@ -1,5 +1,5 @@
 import Stream from "../stream";
-import { getLater, delayed, raceLP, deferred } from "../utils";
+import { getLater, delayed, raceL, deferred } from "../utils";
 
 function noop() {}
 
@@ -95,7 +95,7 @@ Stream.bind = function(sub, unsub, untilP) {
         onErr = err => () => { unsub(slot, res); return Stream.Abort(err) },
         nextP = !untilP ?
           nextE.then( v => Stream.Cons(v, next() ), Stream.Abort ) :
-          raceLP([
+          raceL([
             untilP.then( _ => () => { unsub(slot); return Stream.Empty; }, onErr ),
             nextE.then( v => () => Stream.Cons(v, next()), onErr )
           ]);

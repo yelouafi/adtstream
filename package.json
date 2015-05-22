@@ -1,6 +1,6 @@
 {
   "name": "adtstream",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "streams based on ADTs and pure FP",
   "main": "lib/index.js",
   "browser": {
@@ -18,7 +18,7 @@
   "scripts": {
     "test": "mocha --compilers js:babel/register",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adtsream.js",
+    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adtstream.js",
     "build": "npm run compile && npm run bundle"
   },
   "repository": {

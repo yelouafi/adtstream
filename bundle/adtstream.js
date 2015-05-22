@@ -138,7 +138,7 @@ var _Stream = require("../stream");
 
 var _Stream2 = _interopRequireDefault(_Stream);
 
-var _getLater$delayed$raceLP$deferred = require("../utils");
+var _getLater$delayed$raceL$deferred = require("../utils");
 
 function noop() {}
 
@@ -192,14 +192,14 @@ _Stream2["default"].seq = function (arr, delay, interval) {
       return index < arr.length ? _Stream2["default"].Cons(arr[index], from(index + 1, interval)) : _Stream2["default"].Empty;
     };
 
-    return _Stream2["default"].Future(_getLater$delayed$raceLP$deferred.getLater(getter, millis));
+    return _Stream2["default"].Future(_getLater$delayed$raceL$deferred.getLater(getter, millis));
   }
 };
 
 // occs : ([(a, Number)]) -> Stream a
 _Stream2["default"].occs = function (occs) {
   var arrP = occs.map(function (o) {
-    return _getLater$delayed$raceLP$deferred.delayed(o[0], o[1]);
+    return _getLater$delayed$raceL$deferred.delayed(o[0], o[1]);
   });
   return from(0);
 
@@ -221,7 +221,7 @@ _Stream2["default"].range = function (min, max, delay, interval) {
       return index <= max ? _Stream2["default"].Cons(index, from(index + 1, interval)) : _Stream2["default"].Empty;
     };
 
-    return _Stream2["default"].Future(_getLater$delayed$raceLP$deferred.getLater(getter, millis));
+    return _Stream2["default"].Future(_getLater$delayed$raceL$deferred.getLater(getter, millis));
   }
 };
 
@@ -243,7 +243,7 @@ _Stream2["default"].bind = function (sub, unsub, untilP) {
     },
         nextP = !untilP ? nextE.then(function (v) {
       return _Stream2["default"].Cons(v, next());
-    }, _Stream2["default"].Abort) : _getLater$delayed$raceLP$deferred.raceLP([untilP.then(function (_) {
+    }, _Stream2["default"].Abort) : _getLater$delayed$raceL$deferred.raceL([untilP.then(function (_) {
       return function () {
         unsub(slot);return _Stream2["default"].Empty;
       };
@@ -267,7 +267,7 @@ _Stream2["default"].bind = function (sub, unsub, untilP) {
   function nextEvent() {
     if (events.length) {
       return Promise.resolve(events.shift());
-    }var def = _getLater$delayed$raceLP$deferred.deferred();
+    }var def = _getLater$delayed$raceL$deferred.deferred();
     defs.push(def);
     return def.promise;
   }
@@ -727,7 +727,6 @@ Stream.prototype.merge = function (s2) {
 
 // relay : (Stream a, Stream a) -> Stream a
 Stream.prototype.relay = function (s2) {
-
   return this.takeUntil(s2.first()["catch"](function (_) {
     return never;
   })).concat(s2);
