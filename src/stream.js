@@ -439,7 +439,6 @@ Stream.prototype.merge = function(s2) {
 
 // relay : (Stream a, Stream a) -> Stream a
 Stream.prototype.relay = function(s2) {
-  
   return this.takeUntil( s2.first().catch( _ => never) ).concat(s2);
 };
 

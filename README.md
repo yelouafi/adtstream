@@ -1,4 +1,4 @@
-See [Blog Post]
+See [Blog Post: Promises + FP = Beautiful Streams][4]
 
 Streams built using the following ingredients
 
@@ -66,3 +66,4 @@ If you need to provide your own Promise support in the browser you can either
 [1]: https://babeljs.io/docs/usage/cli/
 [2]: https://github.com/jakearchibald/es6-promise
 [3]: https://kangax.github.io/compat-table/es6/
+[4]: http://tech.pro/blog/6888/promises--fp--beautiful-streams
