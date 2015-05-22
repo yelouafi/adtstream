@@ -18,7 +18,7 @@ adt( Stream, {
 // anError : Object
 // aBool : Object (javascript truth)
 
-// map : ( Stream a, a -> b | Promise b ) => Stream b
+// map : ( Stream a, a -> b | Promise b ) -> Stream b
 Stream.prototype.map = function(f) { 
   let tailM, futP;
   
@@ -43,7 +43,7 @@ Stream.prototype.const = function (val) {
 };
 
 
-// mapError : (Stream a, anError -> Stream a) => Stream a
+// mapError : (Stream a, anError -> Stream a) -> Stream a
 Stream.prototype.mapError = function(f) { 
   
     return  this.isEmpty ? this :
@@ -58,7 +58,7 @@ Stream.prototype.mapError = function(f) {
     );
 };
 
-// filter : (Stream a, a -> aBool | Promise aBool) => Stream a
+// filter : (Stream a, a -> aBool | Promise aBool) -> Stream a
 Stream.prototype.filter = function(p) {
   let tailF, futP;
   
@@ -83,7 +83,7 @@ Stream.prototype.length = function() {
     return  this.reduce( (n, _) =>  n + 1, 0 );
 };
 
-// first : Stream a => Promise a
+// first : Stream a -> Stream a
 Stream.prototype.first = function() { 
     return  this.isEmpty ? Promise.reject('Empty Stream') :
     
@@ -94,12 +94,12 @@ Stream.prototype.first = function() {
     /* isFuture */ this.promise.then( s => s.first(), Promise.reject );
 };
 
-// last : Stream a => Promise a
+// last : Stream a -> Stream a
 Stream.prototype.last = function() { 
   return this.reduce( (_, cur) => cur );
 };
 
-// at : ( Stream a, Number ) => Promise a
+// at : ( Stream a, Number ) -> Stream a
 Stream.prototype.at = function(idx) { 
   
   return  this.isEmpty ? Promise.reject('index too large') :
@@ -116,7 +116,7 @@ Stream.prototype.at = function(idx) {
 };
 
 
-// take : (Stream a, Number ) => Stream a
+// take : (Stream a, Number ) -> Stream a
 Stream.prototype.take = function(n) { 
   
   return  this.isEmpty || n < 1 ? Stream.Empty :
@@ -131,7 +131,7 @@ Stream.prototype.take = function(n) {
     );
 };
 
-// takeWhile : (Stream a, a -> aBool | Promise aBool) => Stream a
+// takeWhile : (Stream a, a -> aBool | Promise aBool) -> Stream a
 Stream.prototype.takeWhile = function(p) { 
   
   return  this.isEmpty || this.isAbort ? this :
@@ -149,7 +149,7 @@ Stream.prototype.takeWhile = function(p) {
     );
 };
 
-// takeUntil  : (Stream a, Promise) => Stream a
+// takeUntil  : (Stream a, Promise) -> Stream a
 Stream.prototype.takeUntil = function(promise) { 
   
   return this.isEmpty || this.isAbort ?  this :
@@ -165,7 +165,7 @@ Stream.prototype.takeUntil = function(promise) {
   );
 };
 
-// skip : (Stream a, n) => Stream a
+// skip : (Stream a, n) -> Stream a
 Stream.prototype.skip = function(n) { 
   
   return  this.isEmpty || this.isAbort || n < 1 ? this :
@@ -178,7 +178,7 @@ Stream.prototype.skip = function(n) {
     );
 };
 
-// skipWhile : (Stream a, a -> aBool | Promise aBool) => Stream a
+// skipWhile : (Stream a, a -> aBool | Promise aBool) -> Stream a
 Stream.prototype.skipWhile = function(p) { 
   
   return  this.isEmpty || this.isAbort ? this :
@@ -195,7 +195,7 @@ Stream.prototype.skipWhile = function(p) {
     );
 };
 
-// skipUntil  : (Stream a, Promise) => Stream a
+// skipUntil  : (Stream a, Promise) -> Stream a
 Stream.prototype.skipUntil = function(promise) {
   
   return this.isEmpty || this.isAbort ?  this :
@@ -282,7 +282,7 @@ Stream.prototype.group = function() {
   return this.groupBy( (x1, x2) => x1 === x2  );
 };
 
-// splitBy : (Stream a, a -> Stream a) => Stream a
+// splitBy : (Stream a, a -> Stream a) -> Stream a
 Stream.prototype.splitBy = function(f) {
   
   return ( this.isEmpty || this.isAbort) ? this :
@@ -294,7 +294,7 @@ Stream.prototype.splitBy = function(f) {
 };
 
 
-// chunkBy : (Stream a, a -> [Stream a, a | Promise a]) => Stream a
+// chunkBy : (Stream a, a -> [Stream a, a | Promise a]) -> Stream a
 Stream.prototype.chunkBy = function(zero, f) { 
   var chunks, residual;
   
@@ -342,7 +342,7 @@ Stream.prototype.reduce = function(f, seed = undef) {
     this.promise.then( s => s.reduce(f, seed), Promise.reject );
 };
 
-// scan : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) => Stream b
+// scan : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) -> Stream a
 Stream.prototype.scan = function(f, seed = undef) { 
   let acc1;
   
@@ -396,12 +396,12 @@ Stream.prototype.any = function(pred)  {
     this.promise.then( s => s.any(pred) );
 };
 
-// join : ( Stream a, a) => Promise a
+// join : ( Stream a, a) -> Stream a
 Stream.prototype.join = function(sep = ', ')  {
   return this.reduce( (prev, cur) => prev + sep + cur );
 };
 
-// concat : (Stream a, Stream a) => Stream a
+// concat : (Stream a, Stream a) -> Stream a
 Stream.prototype.concat = function(s2) { 
   
   return  this.isEmpty ? s2 :
@@ -416,7 +416,7 @@ Stream.prototype.concat = function(s2) {
     );
 };
 
-// merge : (Stream a, Stream a) => Stream a
+// merge : (Stream a, Stream a) -> Stream a
 Stream.prototype.merge = function(s2) { 
   
   return this.isEmpty ? s2 :
@@ -437,13 +437,13 @@ Stream.prototype.merge = function(s2) {
   );
 };
 
-// relay : (Stream a, Stream a) => Stream a
+// relay : (Stream a, Stream a) -> Stream a
 Stream.prototype.relay = function(s2) {
   
   return this.takeUntil( s2.first().catch( _ => never) ).concat(s2);
 };
 
-// zip : (Stream a, Stream b) => Stream [a,b]
+// zip : (Stream a, Stream b) -> Stream [a,b]
 Stream.prototype.zip = function(s2) { 
   
   return  this.isEmpty || this.isAbort ? this :
@@ -476,47 +476,47 @@ Stream.prototype.flatten = function(f) {
     Stream.Future( this.promise.then( s => s.flatten(f), Stream.Abort ) );
 };
 
-// mergeAll : Stream (Stream a) => Stream a
+// mergeAll : Stream (Stream a) -> Stream a
 Stream.prototype.mergeAll = function() { 
   return this.flatten( (s1, s2) => s1.merge(s2)  );
 };
 
-// concatAll : Stream (Stream a) => Stream a
+// concatAll : Stream (Stream a) -> Stream a
 Stream.prototype.concatAll = function() { 
   return this.flatten( (s1, s2) => s1.concat(s2)  );
 };
 
-// relayAll : Stream (Stream a) => Stream a
+// relayAll : Stream (Stream a) -> Stream a
 Stream.prototype.relayAll = function() { 
   return this.flatten( (s1, s2) => s1.relay(s2)  );
 };
 
-// zipAll : Stream (Stream a) => Stream a
+// zipAll : Stream (Stream a) -> Stream a
 Stream.prototype.zipAll = function() { 
   return this.flatten( (s1, s2) => s1.zip(s2)  );
 };
 
-// mergeMap : (Stream a, a -> Stream b) => Stream b
+// mergeMap : (Stream a, a -> Stream b) -> Stream a
 Stream.prototype.mergeMap = function(f) {
   return this.map(f).mergeAll();
 };
 
-// concatMap : (Stream a, a -> Stream b) => Stream b
+// concatMap : (Stream a, a -> Stream b) -> Stream a
 Stream.prototype.concatMap = function(f) {
   return this.map(f).concatAll();
 };
 
-// relayMap : (Stream a, a -> Stream b) => Stream b
+// relayMap : (Stream a, a -> Stream b) -> Stream a
 Stream.prototype.relayMap = function(f) {
   return this.map(f).relayAll();
 };
 
-// zipMap : (Stream a, a -> Stream b) => Stream b
+// zipMap : (Stream a, a -> Stream b) -> Stream a
 Stream.prototype.zipMap = function(f) {
   return this.map(f).zipAll();
 };
 
-// debounce : (Stream a, () => Promise) => Stream a
+// debounce : (Stream a, () => Promise) -> Stream a
 Stream.prototype.debounce = function(event, last=undef) {
   
   return this.isEmpty || this.isAbort ? 
@@ -535,7 +535,7 @@ Stream.prototype.debounce = function(event, last=undef) {
   
 };
 
-// throttle : (Stream a, () => Promise) => Stream a
+// throttle : (Stream a, () => Promise) -> Stream a
 Stream.prototype.throttle = function(event) {
   
   return this.isEmpty || this.isAbort ? this :
