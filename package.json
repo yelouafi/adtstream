@@ -13,13 +13,15 @@
   "devDependencies": {
     "babel": "^5.2.13",
     "babelify": "^6.0.2",
-    "mocha": "^2.2.4"
+    "mocha": "^2.2.4",
+    "uglify-js": "^2.4.23"
   },
   "scripts": {
     "test": "mocha --compilers js:babel/register",
     "compile": "babel src --out-dir lib",
-    "bundle": "browserify src/index.js -t babelify -s adts --outfile bundle/adtstream.js",
-    "build": "npm run compile && npm run bundle"
+    "bundle-debug": "browserify src/index.js -t babelify -s adts --outfile bundle/adtstream.js",
+    "bundle": "uglifyjs bundle/adtstream.js > bundle/adtstream.min.js",
+    "build": "npm run compile && npm run bundle-debug && npm run bundle"
   },
   "repository": {
     "type": "git",

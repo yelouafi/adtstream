@@ -34,7 +34,7 @@ Using the generic `Stream.bind()` method you can implement your own stream
 
     Stream.bind(subscribe, unsubscribe, untilP)
     
-The subscribes to an event source using the 1st argument, and yields results from the event until the ending promise (the 3rd argument) completes then unsubscribes using the 2nd argument
+The function subscribes to an event source using the 1st argument, and yields results from the event source until the ending promise (the 3rd argument) completes then unsubscribes using the 2nd argument
 
 For example here is how Streams are built from DOM events
 
@@ -50,7 +50,7 @@ In the browser the bundle exposes a global `adts` variable, so you can use it li
 
     var Stream = adts.Stream;
     
-Then you can create streams from dom events with the helper method `on`
+Then you can create streams from dom events with the helper method `$on`
 
     adts.$on(document, 'keydown').filter( e => e.keyCode === 17 ).log('key')
     
@@ -58,7 +58,17 @@ You can also use selectors in place of DOM objects
 
     adts.$on('#button', 'click').log('click')
     
+There is another utility method `$once` to get a Promise holding the next event occurrence
 
+    adts.$once(document, 'click').then( e => console.log(e) )
+    
+For example you can combine `$on` and `$once` to create finite event streams
+
+    adts.$on( document, 'mousemove', adts.$once('#stopButton', 'click') )
+    
+You can also use the timeout utility method `delay` to limit the event stream by a given delay (in milliseconds)
+
+    adts.$on( document, 'click', adts.utils.delay(1, 10000) ).log()
 
 # Transpiling ES6 sources
 

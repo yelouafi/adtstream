@@ -240,7 +240,15 @@ describe('Stream', () => {
         [[1,20],[2,70],[3,120],[4,140],[5,160]] )
     )
   })
-
+  
+  describe('#combine()', () => {
+    it('should combine latest occurrences from 2 sequences', () =>
+      assertS( 
+        Stream.seq([1,2,3,4], 10, 10).combine( Stream.seq([10,20,30], 22,20), (x,y) => x+y ), 
+        [[12,22],[13,30],[14,40],[24,42],[34,62]])
+    )
+  })
+  
   describe('#merge()', () => {
     it('should merge occurrences from 2 sequences', () =>
       assertS( 

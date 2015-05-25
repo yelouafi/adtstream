@@ -416,6 +416,53 @@ Stream.prototype.concat = function(s2) {
     );
 };
 
+// combine : (Stream a, Stream b, (a,b) -> c ) -> Stream c
+Stream.prototype.combine = function(s2, f, latest1=undef, latest2=undef) {
+  
+  return  this.isEmpty && s2.isEmpty ? Stream.Empty :
+  
+  this.isAbort ? this :
+  s2.isAbort ? s2 :
+  
+  this.isCons ?
+    ( latest2 !== undef ?
+        Stream.Cons( f(this.head, latest2), this.tail.combine(s2, f, this.head, latest2) ) :
+        this.tail.combine(s2, f, this.head, latest2)
+    ) :
+    
+  s2.isCons ?
+    ( latest1 !== undef ?
+        Stream.Cons( f(latest1, s2.head), this.combine(s2.tail, f, latest1, s2.head) ) :
+        this.combine(s2.tail, f, latest1, s2.head)
+    ) :
+  
+  this.isFuture  && s2.isEmpty ?
+  ( latest2 !== undef ?
+      Stream.Future(
+        this.promise.then( s => s.combine(s2, f, latest1, latest2), Stream.Abort )  
+      ) :
+      Stream.Empty
+  ) :
+    
+    
+  s2.isFuture && this.isEmpty ?
+  ( latest1 !== undef ?
+      Stream.Future(
+        s2.promise.then( s => this.combine(s, f, latest1, latest2), Stream.Abort )  
+      ) :
+      Stream.Empty
+  ) :
+  
+  /* this.isFuture && s2.isFuture */
+    Stream.Future(
+      raceL([
+        this.promise.then( s => () => s.combine(s2, f, latest1, latest2), Stream.Abort ),
+        s2.promise.then( s => () => this.combine(s, f, latest1, latest2), Stream.Abort )  
+      ])
+    )
+  
+};
+
 // merge : (Stream a, Stream a) -> Stream a
 Stream.prototype.merge = function(s2) { 
   

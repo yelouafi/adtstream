@@ -710,9 +710,34 @@ Stream.prototype.concat = function (s2) {
   }, Stream.Abort));
 };
 
+// combine : (Stream a, Stream b, (a,b) -> c ) -> Stream c
+Stream.prototype.combine = function (s2, f) {
+  var _this11 = this;
+
+  var latest1 = arguments[2] === undefined ? undef : arguments[2];
+  var latest2 = arguments[3] === undefined ? undef : arguments[3];
+
+  return this.isEmpty && s2.isEmpty ? Stream.Empty : this.isAbort ? this : s2.isAbort ? s2 : this.isCons ? latest2 !== undef ? Stream.Cons(f(this.head, latest2), this.tail.combine(s2, f, this.head, latest2)) : this.tail.combine(s2, f, this.head, latest2) : s2.isCons ? latest1 !== undef ? Stream.Cons(f(latest1, s2.head), this.combine(s2.tail, f, latest1, s2.head)) : this.combine(s2.tail, f, latest1, s2.head) : this.isFuture && s2.isEmpty ? latest2 !== undef ? Stream.Future(this.promise.then(function (s) {
+    return s.combine(s2, f, latest1, latest2);
+  }, Stream.Abort)) : Stream.Empty : s2.isFuture && this.isEmpty ? latest1 !== undef ? Stream.Future(s2.promise.then(function (s) {
+    return _this11.combine(s, f, latest1, latest2);
+  }, Stream.Abort)) : Stream.Empty :
+
+  /* this.isFuture && s2.isFuture */
+  Stream.Future(_raceL.raceL([this.promise.then(function (s) {
+    return function () {
+      return s.combine(s2, f, latest1, latest2);
+    };
+  }, Stream.Abort), s2.promise.then(function (s) {
+    return function () {
+      return _this11.combine(s, f, latest1, latest2);
+    };
+  }, Stream.Abort)]));
+};
+
 // merge : (Stream a, Stream a) -> Stream a
 Stream.prototype.merge = function (s2) {
-  var _this11 = this;
+  var _this12 = this;
 
   return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(this) : Stream.Future(_raceL.raceL([this.promise.then(function (s) {
     return function () {
@@ -720,7 +745,7 @@ Stream.prototype.merge = function (s2) {
     };
   }, Stream.Abort), s2.promise.then(function (s) {
     return function () {
-      return s.merge(_this11);
+      return s.merge(_this12);
     };
   }, Stream.Abort)]));
 };
@@ -734,10 +759,10 @@ Stream.prototype.relay = function (s2) {
 
 // zip : (Stream a, Stream b) -> Stream [a,b]
 Stream.prototype.zip = function (s2) {
-  var _this12 = this;
+  var _this13 = this;
 
   return this.isEmpty || this.isAbort ? this : s2.isEmpty || s2.isAbort ? s2 : this.isCons && s2.isCons ? Stream.Cons([this.head, s2.head], this.tail.zip(s2.tail)) : this.isCons && s2.isFuture ? Stream.Future(s2.promise.then(function (s) {
-    return _this12.zip(s);
+    return _this13.zip(s);
   }, Stream.Abort)) :
 
   // this.isFuture && (s2.isCons || s2.isFuture)
@@ -807,7 +832,7 @@ Stream.prototype.zipMap = function (f) {
 
 // debounce : (Stream a, () => Promise) -> Stream a
 Stream.prototype.debounce = function (event) {
-  var _this13 = this;
+  var _this14 = this;
 
   var last = arguments[1] === undefined ? undef : arguments[1];
 
@@ -815,7 +840,7 @@ Stream.prototype.debounce = function (event) {
     return s.debounce(event);
   }, Stream.Abort)) : Stream.Future(_raceL.raceL([event().then(function (_) {
     return function () {
-      return Stream.Cons(last, _this13.debounce(event, undef));
+      return Stream.Cons(last, _this14.debounce(event, undef));
     };
   }, Stream.Abort), this.promise.then(function (s) {
     return function () {
