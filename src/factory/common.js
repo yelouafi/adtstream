@@ -34,7 +34,7 @@ Stream.timer = function (interval, count) {
 // timer : ( Number, count ) -> Stream Number
 Stream.seconds = function (count) {
   let now = Date.now();
-  return Stream.timer(1000, count).map( t => Math.floor( (t-now)/1000 ) );
+  return Stream.Cons(0, Stream.timer(1000, count).map(t => Math.floor((t-now)/1000 )));
 };
 
 // seq : ([a], Number, Number) -> Stream a

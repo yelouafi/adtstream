@@ -29,41 +29,49 @@
   	</p>
   </div>
   
-<script src="../../bundle/adts.js"></script>
+<script src="../../bundle/adtstream.js"></script>
 <script>
-		
+/* global adts */
+var Stream = adts.Stream;
+
 function watchdog( delay, tick, order, done ) {
-	
-	var counter = adts.Stream.merge(
-	  
-		order.const(0),		// on order start counter
-		done.const(-1),		// on done reset counter to -1
-		tick.map( function(v, prev) { 
-			return prev > -1 ? prev + 1 : -1;
-		})				// on each tick increment counter if we are inside an order	
-		
-	);
+	var counter = order.const(0).merge(done.const(-1)).merge(tick.const(1))
+		.scan(function(p,c) {
+			return 	c <= 0  ? c : 
+							p < 0 ? p : 
+							p + c;
+		}, -1)
+
 	
 	return {
-		alarm: counter.gt(delay),
+		alarm: counter.map(function(c) { return c > delay }),
 		counter: counter,
-		paused: counter.eq(-1)
+		paused: counter.map(function(c) { return c == -1 })
 	};
 }
-var tick 	= su.seconds(),
-	order 	= $('#order').$click(),
-	done 	= $('#done').$click(),
-	wd = watchdog( 5, tick, order, done );
-$('#done', { disabled: wd.paused });
-$('#order', { enabled: wd.paused });
-$('#timer', { text: tick });
-$('#counter', { text: wd.counter });
-$('#alarmText', {
-	text: ss.if( wd.alarm, wd.counter, 'NA' )
+
+document.addEventListener("DOMContentLoaded", function(event) {
+	
+	var tick 	= Stream.seconds(1000),
+			order 	= adts.$on('#order', 'click'),
+			done 	= adts.$on('#done', 'click'),
+			wd = watchdog( 5, tick, order, done );
+
+	adts.$$('#done', { disabled: wd.paused });
+	adts.$$('#order', { enabled: wd.paused });
+	adts.$$('#timer', { text: tick.scan(function(p,c) { return p+1; }, 0) });
+	adts.$$('#counter', { text: wd.counter });
+	adts.$$('#alarmText', {
+		text: Stream.combine([wd.alarm, wd.counter], function(alarm, counter) {
+			return alarm ? counter : 'NA';
+		})
+	});
+	adts.$$('#alarm', { 
+		css: { blink: wd.alarm }
+	});
+	
 });
-$('#alarm', { 
-	css: ss.obj({ blink: wd.alarm })
-});
+
 </script>
 </body>
 </html>

@@ -247,6 +247,17 @@ describe('Stream', () => {
         Stream.seq([1,2,3,4], 10, 10).combine( Stream.seq([10,20,30], 22,20), (x,y) => x+y ), 
         [[12,22],[13,30],[14,40],[24,42],[34,62]])
     )
+    
+    it('should combine latest occurrences from many sequences', () =>
+      assertS( 
+        Stream.combine([
+          Stream.seq([1,2,3,4], 10, 10),
+          Stream.seq([10,20,30], 22,20),
+          Stream.seq([100,200,300], 34,30)
+        ]), 
+        [ [[3,10,100],34],[[4,10,100],40],[[4,20,100],42],[[4,30,100],62],[[4,30,200],64],[[4,30,300],94] ])
+    )
+    
   })
   
   describe('#merge()', () => {

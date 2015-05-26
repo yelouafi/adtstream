@@ -70,7 +70,7 @@ function eachKey(obj, f) {
   }
 }
 
-_Stream2['default'].fromDomTarget = function (target, event, untilP) {
+_Stream2['default'].fromDomEvent = function (target, event, untilP) {
   target = dom(target);
   return _Stream2['default'].bind(function (listener) {
     return target.addEventListener(event, listener);
@@ -102,6 +102,11 @@ utils.nextDOMEvent = function (target, event) {
 };
 
 var props = {
+  $$def: function $$def(key) {
+    return function (el, v) {
+      return el[key] = v.toString();
+    };
+  },
   text: function text(el, v) {
     return el.textContent = v.toString();
   },
@@ -116,6 +121,13 @@ var props = {
   },
   visible: function visible(el, v) {
     return !v ? el.style.display = 'none' : el.style.removeProperty('display');
+  },
+  css: function css(el, v) {
+    return eachKey(v, function (cls, toggle) {
+      if (toggle instanceof _Stream2['default']) toggle.forEach(function (v) {
+        return el.classList.toggle(cls, !!v);
+      });else el.classList.toggle(cls, toggle);
+    });
   }
 };
 
@@ -123,9 +135,10 @@ utils.$update = function (target, config) {
   target = dom(target);
 
   eachKey(config, function (key, val) {
+    var fn = props[key] || props.$$def(key);
     if (val instanceof _Stream2['default']) val.forEach(function (v) {
-      return target[key] = v;
-    });else target[key] = val;
+      return fn(target, v);
+    });else fn(target, val);
   });
 };
 
@@ -177,9 +190,9 @@ _Stream2["default"].timer = function (interval, count) {
 // timer : ( Number, count ) -> Stream Number
 _Stream2["default"].seconds = function (count) {
   var now = Date.now();
-  return _Stream2["default"].timer(1000, count).map(function (t) {
+  return _Stream2["default"].Cons(0, _Stream2["default"].timer(1000, count).map(function (t) {
     return Math.floor((t - now) / 1000);
-  });
+  }));
 };
 
 // seq : ([a], Number, Number) -> Stream a
@@ -303,7 +316,7 @@ var utils = _interopRequireWildcard(_import);
 module.exports = {
     Stream: _Stream2["default"],
     utils: utils,
-    $on: _Stream2["default"].fromDomTarget,
+    $on: _Stream2["default"].fromDomEvent,
     $once: utils.nextDOMEvent,
     $$: utils.$update
 };
@@ -314,6 +327,8 @@ module.exports = {
 var _interopRequireDefault = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
 
 var _slicedToArray = function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } };
+
+var _toConsumableArray = function (arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } };
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -733,6 +748,16 @@ Stream.prototype.combine = function (s2, f) {
       return _this11.combine(s, f, latest1, latest2);
     };
   }, Stream.Abort)]));
+};
+
+Stream.combine = function (ss, f) {
+  return ss.reduce(function (s1, s2) {
+    return s1.combine(s2, function (x, y) {
+      return [].concat(x, y);
+    });
+  }).map(function (args) {
+    return f ? f.apply(undefined, _toConsumableArray(args)) : args;
+  });
 };
 
 // merge : (Stream a, Stream a) -> Stream a

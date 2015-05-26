@@ -3,7 +3,7 @@ import { Stream } from "../src"
 function simpleProtocol(src) {
   
   var [header1, body1] = src.break( t => t.indexOf("\n\n") >= 0 ),
-      chunks = body1.getHead().then( t => t.split("\n\n") ),
+      chunks = body1.first().then( t => t.split("\n\n") ),
       ch1 = chunks.then( ts => Stream.unit(ts[0]) ),
       ch2 = chunks.then( ts => Stream.unit(ts[1]) ),
       header = header1.concat( Stream.Future(ch1) ) 

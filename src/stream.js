@@ -463,6 +463,11 @@ Stream.prototype.combine = function(s2, f, latest1=undef, latest2=undef) {
   
 };
 
+Stream.combine = function(ss, f) {
+  return ss.reduce((s1, s2) => s1.combine(s2, (x,y) => [].concat(x,y) ))
+          .map( args => f ? f(...args) : args );
+}
+
 // merge : (Stream a, Stream a) -> Stream a
 Stream.prototype.merge = function(s2) { 
   

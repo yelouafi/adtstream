@@ -7,7 +7,7 @@ import * as utils from "./utils";
 module.exports = {
     Stream : Stream,
     utils : utils,
-    $on : Stream.fromDomTarget,
+    $on : Stream.fromDomEvent,
     $once : utils.nextDOMEvent,
     $$: utils.$update
 };
