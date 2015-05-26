@@ -8,9 +8,12 @@ Streams built using the following ingredients
 Hence the name *ADT Streams*.
 
 - [Usage](#usage)
+	- [Server](##server)
+	- [Browser](##browser)
 - [Examples](#examples)
 - [API][5]
 - [Transpiling ES6 sources](#transpiling-es6-sources)
+- [ES6 Promise polyfill](#es6-promise-polyfill)
 
 #Usage
 
@@ -223,7 +226,7 @@ In the server, you can run the ES6 examples in the `examples` directory directly
 
 This will compile the code in the fly and execute it.
 
-# ES6 Promise polyfill
+#ES6 Promise polyfill
 
 ##Server environments
 
