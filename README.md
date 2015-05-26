@@ -10,7 +10,7 @@ Hence the name *ADT Streams*.
 - [Usage](#usage)
 - [Examples](#examples)
 - [API][5]
-- [Transpiling ES6 sources](.#transpiling-ES6-sources)
+- [Transpiling ES6 sources](#transpiling-es6-sources)
 
 #Usage
 
