@@ -9,5 +9,8 @@ module.exports = {
     utils : utils,
     $on : Stream.fromDomEvent,
     $once : utils.nextDOMEvent,
-    $$: utils.$update
+    $$: utils.$update,
+    $prop: (prop, handler) => {
+        utils.$vprops[prop] = el => v => handler(el, v);
+    } 
 };

@@ -8,19 +8,28 @@
     <button id="down">Down</button>
     <button id="stop">Stop</button>
     <p id="output"></p>
+    <p id="hi"></p>
     
 <script src="../../bundle/adtstream.js"></script>
 <script>
 /* global adts */
 document.addEventListener("DOMContentLoaded", function(event) {
-    
-   var  stop = adts.$once("#stop", "click"),
-        ups = adts.$on("#up", "click", stop).map( function() { return 1 }),
-        downs = adts.$on("#down", "click", stop).map( function() { return -1 }),
+  
+  adts.$prop('helloProp', function(el, v) {
+    el.innerHTML = 'hello ' + v;
+  })
+  
+  var  stop = adts.$once("#stop", "click"),
+        ups = adts.$on("#up", "click", stop).const(1),
+        downs = adts.$on("#down", "click", stop).const(-1),
         results = ups.merge(downs).scan(function(p,c) { return p+c; })
         
     adts.$$('#output', {
-        innerHTML : results
+        html : results
+    })
+    
+    adts.$$('#hi', {
+        helloProp : results
     })
         
 });

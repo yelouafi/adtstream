@@ -214,6 +214,12 @@ describe('Stream', () => {
       assertS( Stream.seq([1,2,3], 20, 50).scan( (p,c) => p+c ), [[1,20],[3,70], [6,120]] )
     )
   })
+  
+  describe('#window()', () => {
+    it('should yield a sliding window of results from a sequence', () =>
+      assertS( Stream.range(1, 5, 0, 20).window(3,3) , [[[1,2,3],40],[[2,3,4],60], [[3,4,5],80]] )
+    )
+  })
 
   describe('#toArray()', () => {
     it('should convert a sequence to an array', () =>

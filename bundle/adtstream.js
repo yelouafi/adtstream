@@ -101,33 +101,47 @@ utils.nextDOMEvent = function (target, event) {
   });
 };
 
-var props = {
+var props = utils.$vprops = {
   $$def: function $$def(key) {
-    return function (el, v) {
-      return el[key] = v.toString();
+    return function (el) {
+      return function (v) {
+        return el[key] = v.toString();
+      };
     };
   },
-  text: function text(el, v) {
-    return el.textContent = v.toString();
+  text: function text(el) {
+    return function (v) {
+      return el.textContent = v.toString();
+    };
   },
-  html: function html(el, v) {
-    return el.innerHTML = v.toString();
+  html: function html(el) {
+    return function (v) {
+      return el.innerHTML = v.toString();
+    };
   },
-  disabled: function disabled(el, v) {
-    return el.disabled = !!v;
+  disabled: function disabled(el) {
+    return function (v) {
+      return el.disabled = !!v;
+    };
   },
-  enabled: function enabled(el, v) {
-    return el.disabled = !v;
+  enabled: function enabled(el) {
+    return function (v) {
+      return el.disabled = !v;
+    };
   },
-  visible: function visible(el, v) {
-    return !v ? el.style.display = 'none' : el.style.removeProperty('display');
+  visible: function visible(el) {
+    return function (v) {
+      return !v ? el.style.display = 'none' : el.style.removeProperty('display');
+    };
   },
-  css: function css(el, v) {
-    return eachKey(v, function (cls, toggle) {
-      if (toggle instanceof _Stream2['default']) toggle.forEach(function (v) {
-        return el.classList.toggle(cls, !!v);
-      });else el.classList.toggle(cls, toggle);
-    });
+  css: function css(el) {
+    return function (v) {
+      return eachKey(v, function (cls, toggle) {
+        if (toggle instanceof _Stream2['default']) toggle.forEach(function (v) {
+          return el.classList.toggle(cls, !!v);
+        });else el.classList.toggle(cls, toggle);
+      });
+    };
   }
 };
 
@@ -135,10 +149,8 @@ utils.$update = function (target, config) {
   target = dom(target);
 
   eachKey(config, function (key, val) {
-    var fn = props[key] || props.$$def(key);
-    if (val instanceof _Stream2['default']) val.forEach(function (v) {
-      return fn(target, v);
-    });else fn(target, val);
+    var fn = (props[key] || props.$$def(key))(target);
+    if (val instanceof _Stream2['default']) val.forEach(fn);else fn(val);
   });
 };
 
@@ -318,7 +330,14 @@ module.exports = {
     utils: utils,
     $on: _Stream2["default"].fromDomEvent,
     $once: utils.nextDOMEvent,
-    $$: utils.$update
+    $$: utils.$update,
+    $prop: function $prop(prop, handler) {
+        utils.$vprops[prop] = function (el) {
+            return function (v) {
+                return handler(el, v);
+            };
+        };
+    }
 };
 
 },{"./factory/browser":3,"./factory/common":4,"./factory/server":1,"./stream":6,"./utils":7}],6:[function(require,module,exports){
@@ -345,6 +364,9 @@ var _raceL = require("./utils");
 
 var noop = function noop() {},
     undef = noop,
+    eq = function eq(a, b) {
+  return a === b;
+},
     never = new Promise(noop);
 function Stream() {}
 
@@ -672,6 +694,30 @@ Stream.prototype.scan = function (f) {
   // isFuture
   Stream.Future(this.promise.then(function (s) {
     return s.scan(f, seed);
+  }, Stream.Abort));
+};
+
+// window : ( Stream a, Number ) -> Stream [a]
+Stream.prototype.window = function (size) {
+  var min = arguments[1] === undefined ? 0 : arguments[1];
+
+  return this.scan(function (p, c) {
+    return p.length < size ? p.concat(c) : p.slice(1).concat(c);
+  }, []).filter(function (arr) {
+    return arr.length >= min;
+  });
+};
+
+// distinct : ( Stream a, (a,a) -> aBool ) -> Stream a
+Stream.prototype.changes = function () {
+  var f = arguments[0] === undefined ? eq : arguments[0];
+  var last = arguments[1] === undefined ? undef : arguments[1];
+
+  return this.isEmpty || this.isAbort ? this : this.isCons ? !f(this.head, last) ? Stream.Cons(this.head, this.tail.changes(f, this.head)) : this.tail.changes(f, this.head) :
+
+  // isFuture
+  Stream.Future(this.promise.then(function (s) {
+    return s.changes(f, last);
   }, Stream.Abort));
 };
 

@@ -44,9 +44,9 @@ function watchdog( delay, tick, order, done ) {
 
 	
 	return {
-		alarm: counter.map(function(c) { return c > delay }),
+		alarm: counter.map(function(c) { return c > delay }).changes(),
 		counter: counter,
-		paused: counter.map(function(c) { return c == -1 })
+		paused: counter.map(function(c) { return c == -1 }).changes()
 	};
 }
 
@@ -57,12 +57,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
 			done 	= adts.$on('#done', 'click'),
 			wd = watchdog( 5, tick, order, done );
 
+	wd.paused.log('paused')
+
 	adts.$$('#done', { disabled: wd.paused });
 	adts.$$('#order', { enabled: wd.paused });
 	adts.$$('#timer', { text: tick.scan(function(p,c) { return p+1; }, 0) });
 	adts.$$('#counter', { text: wd.counter });
 	adts.$$('#alarmText', {
-		text: Stream.combine([wd.alarm, wd.counter], function(alarm, counter) {
+		text: wd.alarm.combine(wd.counter , function(alarm, counter) {
 			return alarm ? counter : 'NA';
 		})
 	});

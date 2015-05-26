@@ -3,6 +3,7 @@ import { raceL } from "./utils";
 
 var noop = () => {}, 
     undef = noop,
+    eq = (a,b) => a === b,
     never = new Promise(noop);
 
 
@@ -366,6 +367,29 @@ Stream.prototype.scan = function(f, seed = undef) {
       this.promise.then( s => s.scan(f, seed), Stream.Abort )  
     );
 };
+
+// window : ( Stream a, Number, Number ) -> Stream [a]
+Stream.prototype.window = function(size, min = 0) { 
+  return this.scan( (p,c) => p.length < size ? p.concat(c) : p.slice(1).concat(c), [] )
+            .filter( arr => arr.length >= min );
+};
+
+// changes : ( Stream a, (a,a) -> aBool ) -> Stream a
+Stream.prototype.changes = function(f = eq, last = undef) { 
+  return this.isEmpty || this.isAbort ? this :
+  
+  this.isCons ? 
+    ( !f(this.head, last) ?
+        Stream.Cons(this.head, this.tail.changes(f, this.head) ) :
+        this.tail.changes(f, this.head)
+    ) :
+    
+  // isFuture
+    Stream.Future(
+      this.promise.then( s => s.changes(f, last), Stream.Abort )  
+    );
+};
+
 
 // toArray : Stream a -> Promise [a]
 Stream.prototype.toArray = function() {

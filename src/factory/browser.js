@@ -32,14 +32,14 @@ utils.nextDOMEvent = function (target, event) {
   });
 };
 
-var props = {
-  $$def     : key => (el, v) => el[key] = v.toString(),
-  text      : (el, v) => el.textContent = v.toString(),
-  html      : (el, v) => el.innerHTML = v.toString(),
-  disabled  : (el, v) => el.disabled = !!v,
-  enabled   : (el, v) => el.disabled = !v,
-  visible   : (el, v) => !v ? el.style.display = 'none' : el.style.removeProperty('display'),
-  css       : (el, v) => eachKey(v, (cls, toggle) => {
+var props = utils.$vprops = {
+  $$def     : key => el => v => el[key] = v.toString(),
+  text      : el => v => el.textContent = v.toString(),
+  html      : el => v => el.innerHTML = v.toString(),
+  disabled   : el => v => el.disabled = !!v,
+  enabled   : el => v => el.disabled = !v,
+  visible   : el => v => !v ? el.style.display = 'none' : el.style.removeProperty('display'),
+  css       : el => v => eachKey(v, (cls, toggle) => {
     if(toggle instanceof Stream)
       toggle.forEach( v => el.classList.toggle(cls, !!v) );
     else
@@ -51,11 +51,11 @@ utils.$update = function (target, config) {
   target = dom(target);
   
   eachKey(config, (key, val) => {
-    let fn = props[key] || props.$$def(key);
+    let fn = (props[key] || props.$$def(key))(target);
     if(val instanceof Stream)
-      val.forEach( v => fn(target, v) );
+      val.forEach(fn);
     else
-      fn(target, val);
+      fn(val);
   });
   
 };
