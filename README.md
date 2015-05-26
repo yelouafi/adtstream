@@ -8,8 +8,6 @@ Streams built using the following ingredients
 Hence the name *ADT Streams*.
 
 - [Usage](#usage)
-	- [Server](##server)
-	- [Browser](##browser)
 - [Examples](#examples)
 - [API][5]
 - [Transpiling ES6 sources](#transpiling-es6-sources)
