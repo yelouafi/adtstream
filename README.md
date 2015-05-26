@@ -7,10 +7,10 @@ Streams built using the following ingredients
 
 Hence the name *ADT Streams*.
 
-- [Usage](.#Usage)
-- [Examples](.#Examples)
+- [Usage](#usage)
+- [Examples](#examples)
 - [API][5]
-- [Transpiling ES6 sources](.#Transpiling ES6 sources)
+- [Transpiling ES6 sources](.#transpiling-ES6-sources)
 
 #Usage
 
