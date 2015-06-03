@@ -197,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
   });
   
   adts.$$('#alarmText', {
-    text: wd.alarm.combine(wd.counter , (alarm, counter) => alarm ? counter : 'NA'; })
+    text: wd.alarm.combineWith(wd.counter , (alarm, counter) => alarm ? counter : 'NA'; })
   });
 	
   adts.$$('#alarm', { 
