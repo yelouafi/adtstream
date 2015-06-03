@@ -105,7 +105,7 @@ var props = utils.$vprops = {
   $$def: function $$def(key) {
     return function (el) {
       return function (v) {
-        return el[key] = v.toString();
+        return el[key] = v;
       };
     };
   },
@@ -367,6 +367,11 @@ var noop = function noop() {},
     eq = function eq(a, b) {
   return a === b;
 },
+    flip = function flip(f) {
+  return function (y, x) {
+    return f(x, y);
+  };
+},
     never = new Promise(noop);
 function Stream() {}
 
@@ -462,7 +467,7 @@ Stream.prototype.last = function () {
 // at : ( Stream a, Number ) -> Stream a
 Stream.prototype.at = function (idx) {
 
-  return this.isEmpty ? Promise.reject("index too large") : idx < 0 ? Promise.reject("negative index") : this.isAbort ? Promise.reject(this.err) : this.isCons ? idx === 0 ? Promise.resolve(this.head) : this.tail.at(idx - 1) :
+  return this.isEmpty ? Promise.reject("Index too large") : idx < 0 ? Promise.reject("negative index") : this.isAbort ? Promise.reject(this.err) : this.isCons ? idx === 0 ? Promise.resolve(this.head) : this.tail.at(idx - 1) :
 
   // isFuture
   this.promise.then(function (s) {
@@ -663,7 +668,7 @@ Stream.prototype.chunkBy = function (zero, f) {
   }
 };
 
-// reduce : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) => Promise b
+// reduce : ( Stream a, (b,a) -> b | Promise b, b | Promise b ) => Promise b
 Stream.prototype.reduce = function (f) {
   var _this8 = this;
 
@@ -671,24 +676,42 @@ Stream.prototype.reduce = function (f) {
 
   return this.isEmpty ? seed !== undef ? Promise.resolve(seed) : Promise.reject("Empty Stream") : this.isAbort ? Promise.reject(this.error) : this.isCons ? seed === undef ? this.tail.reduce(f, this.head) : Promise.resolve(seed).then(function (acc) {
     return _this8.tail.reduce(f, f(acc, _this8.head));
-  }, Promise.reject) :
+  }) :
 
   // isFuture
   this.promise.then(function (s) {
     return s.reduce(f, seed);
-  }, Promise.reject);
+  });
+};
+
+// reduceRight : ( Stream a, (a,b) -> b | Promise b, b | Promise b ) => Promise b
+Stream.prototype.reduceRight = function (f) {
+  var _this9 = this;
+
+  var seed = arguments[1] === undefined ? undef : arguments[1];
+
+  return this.isEmpty ? seed !== undef ? Promise.resolve(seed) : Promise.reject("Empty Stream") : this.isAbort ? Promise.reject(this.error) : this.isCons ? seed === undef ? this.tail.reduceRight(f, this.head) : Promise.resolve(seed).then(function (acc) {
+    return _this9.tail.reduceRight(f, acc);
+  }).then(function (acc2) {
+    return f(_this9.head, acc2);
+  }) :
+
+  // isFuture
+  this.promise.then(function (s) {
+    return s.reduceRight(f, seed);
+  });
 };
 
 // scan : ( Stream a, (b, a) -> b | Promise b, b | Promise b ) -> Stream a
 Stream.prototype.scan = function (f) {
-  var _this9 = this;
+  var _this10 = this;
 
   var seed = arguments[1] === undefined ? undef : arguments[1];
 
   var acc1 = undefined;
 
   return this.isEmpty || this.isAbort ? this : this.isCons ? seed === undef ? Stream.Cons(this.head, this.tail.scan(f, this.head)) : Stream.Future(Promise.resolve(seed).then(function (acc) {
-    return (acc1 = f(acc, _this9.head), Stream.Cons(acc1, _this9.tail.scan(f, acc1)));
+    return (acc1 = f(acc, _this10.head), Stream.Cons(acc1, _this10.tail.scan(f, acc1)));
   }, Stream.Abort)) :
 
   // isFuture
@@ -702,7 +725,7 @@ Stream.prototype.window = function (size) {
   var min = arguments[1] === undefined ? 0 : arguments[1];
 
   return this.scan(function (p, c) {
-    return p.length < size ? p.concat(c) : p.slice(1).concat(c);
+    return p.length < size ? [].concat(_toConsumableArray(p), [c]) : [].concat(_toConsumableArray(p.slice(1)), [c]);
   }, []).filter(function (arr) {
     return arr.length >= min;
   });
@@ -724,7 +747,7 @@ Stream.prototype.changes = function () {
 // toArray : Stream a -> Promise [a]
 Stream.prototype.toArray = function () {
   return this.reduce(function (xs, x) {
-    return xs.concat(x);
+    return [].concat(_toConsumableArray(xs), [x]);
   }, []);
 };
 
@@ -739,10 +762,10 @@ Stream.prototype.all = function (pred) {
 
 // any : ( Stream a, a -> aBool | Promise aBool ) => Promise Boolean
 Stream.prototype.any = function (pred) {
-  var _this10 = this;
+  var _this11 = this;
 
   return this.isEmpty ? Promise.resolve(false) : this.isAbort ? Promise.reject(this.err) : this.isCons ? Promise.resolve(pred(this.head).then(function (ok) {
-    return ok || _this10.tail.any(pred);
+    return ok || _this11.tail.any(pred);
   }), Stream.Abort) :
 
   /* isFuture */
@@ -771,44 +794,49 @@ Stream.prototype.concat = function (s2) {
   }, Stream.Abort));
 };
 
-// combine : (Stream a, Stream b, (a,b) -> c ) -> Stream c
-Stream.prototype.combine = function (s2, f) {
-  var _this11 = this;
+// combineWith : (Stream a, Stream b, (a,b) -> c ) -> Stream c
+Stream.prototype.combineWith = function (s2, f) {
+  var _this12 = this;
 
   var latest1 = arguments[2] === undefined ? undef : arguments[2];
   var latest2 = arguments[3] === undefined ? undef : arguments[3];
 
-  return this.isEmpty && s2.isEmpty ? Stream.Empty : this.isAbort ? this : s2.isAbort ? s2 : this.isCons ? latest2 !== undef ? Stream.Cons(f(this.head, latest2), this.tail.combine(s2, f, this.head, latest2)) : this.tail.combine(s2, f, this.head, latest2) : s2.isCons ? latest1 !== undef ? Stream.Cons(f(latest1, s2.head), this.combine(s2.tail, f, latest1, s2.head)) : this.combine(s2.tail, f, latest1, s2.head) : this.isFuture && s2.isEmpty ? latest2 !== undef ? Stream.Future(this.promise.then(function (s) {
-    return s.combine(s2, f, latest1, latest2);
-  }, Stream.Abort)) : Stream.Empty : s2.isFuture && this.isEmpty ? latest1 !== undef ? Stream.Future(s2.promise.then(function (s) {
-    return _this11.combine(s, f, latest1, latest2);
-  }, Stream.Abort)) : Stream.Empty :
-
-  /* this.isFuture && s2.isFuture */
-  Stream.Future(_raceL.raceL([this.promise.then(function (s) {
+  return this.isEmpty ? latest1 !== undef ? s2.map(function (x) {
+    return f(latest1, x);
+  }) : this : this.isAbort ? this : this.isCons ? latest2 !== undef ? Stream.Cons(f(this.head, latest2), this.tail.combineWith(s2, f, this.head, latest2)) : this.tail.combineWith(s2, f, this.head, latest2) : !s2.isFuture ? s2.combineWith(this, flip(f), latest2, latest1) : Stream.Future(_raceL.raceL([this.promise.then(function (s) {
     return function () {
-      return s.combine(s2, f, latest1, latest2);
+      return s.combineWith(s2, f, latest1, latest2);
     };
   }, Stream.Abort), s2.promise.then(function (s) {
     return function () {
-      return _this11.combine(s, f, latest1, latest2);
+      return s2.combineWith(_this12, flip(f), latest2, latest1);
     };
   }, Stream.Abort)]));
 };
 
-Stream.combine = function (ss, f) {
-  return ss.reduce(function (s1, s2) {
-    return s1.combine(s2, function (x, y) {
-      return [].concat(x, y);
+// combine : (Stream a, Stream b ) -> Stream [a,b]
+Stream.prototype.combine = function (s2) {
+  return this.combineWith(s2, function (x, y) {
+    return [x, y];
+  });
+};
+
+// Stream.combine : [Stream a] -> Stream [a]
+Stream.combine = function () {
+  for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return args.reduce(function (acc, s, i) {
+    return i === 1 ? acc.combine(s) : acc.combineWith(s, function (arr, x) {
+      return [].concat(_toConsumableArray(arr), [x]);
     });
-  }).map(function (args) {
-    return f ? f.apply(undefined, _toConsumableArray(args)) : args;
   });
 };
 
 // merge : (Stream a, Stream a) -> Stream a
 Stream.prototype.merge = function (s2) {
-  var _this12 = this;
+  var _this13 = this;
 
   return this.isEmpty ? s2 : this.isAbort ? this : this.isCons ? Stream.Cons(this.head, this.tail.merge(s2)) : !s2.isFuture ? s2.merge(this) : Stream.Future(_raceL.raceL([this.promise.then(function (s) {
     return function () {
@@ -816,7 +844,7 @@ Stream.prototype.merge = function (s2) {
     };
   }, Stream.Abort), s2.promise.then(function (s) {
     return function () {
-      return s.merge(_this12);
+      return s.merge(_this13);
     };
   }, Stream.Abort)]));
 };
@@ -828,18 +856,38 @@ Stream.prototype.relay = function (s2) {
   })).concat(s2);
 };
 
-// zip : (Stream a, Stream b) -> Stream [a,b]
-Stream.prototype.zip = function (s2) {
-  var _this13 = this;
+// zipWith : (Stream a, Stream b, (a,b) -> c) -> Stream c
+Stream.prototype.zipWith = function (s2, f) {
+  var _this14 = this;
 
-  return this.isEmpty || this.isAbort ? this : s2.isEmpty || s2.isAbort ? s2 : this.isCons && s2.isCons ? Stream.Cons([this.head, s2.head], this.tail.zip(s2.tail)) : this.isCons && s2.isFuture ? Stream.Future(s2.promise.then(function (s) {
-    return _this13.zip(s);
+  return this.isEmpty || this.isAbort ? this : s2.isEmpty || s2.isAbort ? s2 : this.isCons && s2.isCons ? Stream.Cons(f(this.head, s2.head), this.tail.zipWith(s2.tail, f)) : this.isCons && s2.isFuture ? Stream.Future(s2.promise.then(function (s) {
+    return _this14.zipWith(s, f);
   }, Stream.Abort)) :
 
   // this.isFuture && (s2.isCons || s2.isFuture)
   Stream.Future(this.promise.then(function (s) {
-    return s.zip(s2);
+    return s.zipWith(s2, f);
   }, Stream.Abort));
+};
+
+// zip : (Stream a, Stream b) -> Stream [a,b]
+Stream.prototype.zip = function (s2) {
+  return this.zipWith(s2, function (x, y) {
+    return [x, y];
+  });
+};
+
+// Stream.zip : [Stream a] -> Stream [a]
+Stream.zip = function () {
+  for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+    args[_key2] = arguments[_key2];
+  }
+
+  return args.reduce(function (acc, s, i) {
+    return i === 1 ? acc.zip(s) : acc.zipWith(s, function (arr, x) {
+      return [].concat(_toConsumableArray(arr), [x]);
+    });
+  });
 };
 
 // flatten : ( Stream (Stream a), (Stream a, Stream a) -> Stream a) -> Stream a
@@ -874,13 +922,6 @@ Stream.prototype.relayAll = function () {
   });
 };
 
-// zipAll : Stream (Stream a) -> Stream a
-Stream.prototype.zipAll = function () {
-  return this.flatten(function (s1, s2) {
-    return s1.zip(s2);
-  });
-};
-
 // mergeMap : (Stream a, a -> Stream b) -> Stream a
 Stream.prototype.mergeMap = function (f) {
   return this.map(f).mergeAll();
@@ -896,14 +937,9 @@ Stream.prototype.relayMap = function (f) {
   return this.map(f).relayAll();
 };
 
-// zipMap : (Stream a, a -> Stream b) -> Stream a
-Stream.prototype.zipMap = function (f) {
-  return this.map(f).zipAll();
-};
-
 // debounce : (Stream a, () => Promise) -> Stream a
 Stream.prototype.debounce = function (event) {
-  var _this14 = this;
+  var _this15 = this;
 
   var last = arguments[1] === undefined ? undef : arguments[1];
 
@@ -911,7 +947,7 @@ Stream.prototype.debounce = function (event) {
     return s.debounce(event);
   }, Stream.Abort)) : Stream.Future(_raceL.raceL([event().then(function (_) {
     return function () {
-      return Stream.Cons(last, _this14.debounce(event, undef));
+      return Stream.Cons(last, _this15.debounce(event, undef));
     };
   }, Stream.Abort), this.promise.then(function (s) {
     return function () {
@@ -956,6 +992,8 @@ Stream.prototype.log = function (prefix) {
 };
 
 exports["default"] = Stream;
+
+/* this.isFuture */
 
 // this.isFuture
 

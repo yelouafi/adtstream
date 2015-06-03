@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	adts.$$('#timer', { text: tick.scan(function(p,c) { return p+1; }, 0) });
 	adts.$$('#counter', { text: wd.counter });
 	adts.$$('#alarmText', {
-		text: wd.alarm.combine(wd.counter , function(alarm, counter) {
+		text: wd.alarm.combineWith(wd.counter , function(alarm, counter) {
 			return alarm ? counter : 'NA';
 		})
 	});
