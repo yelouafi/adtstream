@@ -5,19 +5,21 @@ import { assertP } from "./assertPS"
 import { Scheduler } from "./scheduler"
 
 
+function log(v) { console.log(v); return v; }
+function logErr(err) { console.log('error ', err); throw err }
+
 var sch = new Scheduler();
 sch.mock();
 
 function assertS(s, exp, log = false, force = false) {
   if(!sch.running || force) 
     sch.run(log);
-  return Promise.all([assertP.deepEqual(sch.captureSeq(s), exp), sch.running]);
-  return sch.running;
+  return Promise.all( [assertP.deepEqual(sch.captureSeq(s), exp), sch.running ]);
 }
 
 function schedule(assertion) {
-  assertion();
-  return sch.run();
+  sch.run();
+  return Promise.all([assertion(), sch.running])
 }
 
 
@@ -57,11 +59,34 @@ describe('Stream', () => {
       return assertS( seq2, [ [11,2] ,[12,2+5], [13,2+5+5] ] )
     })
     
-    it('should maps a with an async function', () => {
+    it('should map an empty stream to another empty stream', () => {
+      var seq = Stream.seq([], 25, 0).map( _ => { throw 'error'; })
+      return assertS( seq, [] )
+    })
+    
+    it('should map an aborted stream to another aborted stream stream', () => {
+      var seq = Stream.seq([1, 'error'], 2, 5).map( x => x + 10)
+      return assertS( seq, [ [11,2] ,['!error!',2+5] ] )
+    })
+    
+    it('should fulfills promises returned by the mapping function', () => {
       var idx = 0,
           seq2 = Stream.seq([1,2,3], 2, 5).map( x => sch.getLater( () => x + 10, 5*idx++ ) )
       return assertS( seq2, [ [11, 2+5*0] ,[12, (2+5)+5*1], [13, (2+5+5)+5*2] ] )
     })
+    
+    it('should abort if the returned promise is rejected', () => {
+      var idx = 0,
+          seq2 = Stream.seq([1,2,3], 2, 5)
+            .map( x => sch.getLater( () => { 
+              if(x === 1) 
+                return x + 10 
+              else 
+                throw 'error'; 
+            } , 5*idx++ ) )
+      return assertS( seq2, [ [11, 2+5*0] ,['!error!', (2+5)+5*1] ] )
+    })
+    
   })
   
   
@@ -72,11 +97,41 @@ describe('Stream', () => {
     })
   })
   
+  describe('#filter()', () => {
+    it('should filter occurrences of a sequence', () =>
+      assertS( 
+        Stream.seq([1,2,3,4,5,6], 20, 50).filter( x => !(x%2) ), 
+        [[2,70],[4,170],[6,270]]
+      )
+    )
+    
+    it('should aborts if the predicate yields a rejected promise', () =>
+      assertS( 
+        Stream.seq([1,2,3,4,5,6], 20, 50)
+          .filter( x => sch.getLater( () => {
+            if(x < 3)
+              return !(x%2);
+            else
+              throw 'error';
+          }, 5 )), 
+        [[2,75],['!error!',125]]
+      )
+    )
+  })
   
   describe('#length()', () => {
     it('should return the length of a sequence', () =>
       schedule( () => assertP.equal( Stream.seq([1,2,3], 0, 50).length(), 3 ) )
     )
+    
+    it('should return 0 as the length of an empty sequence', () =>
+      schedule( () => assertP.equal( Stream.seq([], 0, 0).length(), 0 ) )
+    )
+    
+    it('should yield a rejected promise for an aborted sequence', () =>
+      schedule( () => assertP.rejected( Stream.seq([1,'error'], 0, 0).length(), 'error' ) )
+    )
+    
   })
   
   /
@@ -86,7 +141,7 @@ describe('Stream', () => {
     )
     
     it('should reject the promise of first element if the stream is Empty', () =>
-      schedule( () => assertP.rejected( Stream.seq([], 20, 50).first() ) )
+      schedule( () => assertP.rejected( Stream.seq([], 20, 50).first(), 'Empty Stream' ) )
     )
   })
   
@@ -96,7 +151,7 @@ describe('Stream', () => {
     )
     
     it('should reject the promise of last element if the stream is Empty', () =>
-      schedule( () => assertP.rejected( Stream.seq([], 20, 50).last() ) )
+      schedule( () => assertP.rejected( Stream.seq([], 20, 50).last(), 'Empty Stream' ) )
     )
   })
   
@@ -106,7 +161,7 @@ describe('Stream', () => {
     )
     
     it('should reject the promise of 4th occurrence from a sequence ([1,2,3],...)', () =>
-      schedule( () => assertP.rejected( Stream.seq([1,2,3], 20, 50).at(3) ) )
+      schedule( () => assertP.rejected( Stream.seq([1,2,3], 20, 50).at(3), 'Index too large' ) )
     )
   })
   
@@ -114,6 +169,10 @@ describe('Stream', () => {
   describe('#take()', () => {
     it('should take n first occurrences from a sequence', () =>
       assertS( Stream.seq([1,2,3,4,5,6], 20, 50).take(2), [[1,20],[2,70]] )
+    )
+    
+    it('should take **at most** n first occurrences from a sequence', () =>
+      assertS( Stream.seq([1,2], 20, 50).take(10), [[1,20],[2,70]] )
     )
   })
   
@@ -149,15 +208,6 @@ describe('Stream', () => {
       assertS( 
         Stream.seq([1,2,3,4,5,6], 20, 50).skipUntil(sch.getLater( () => 1, 190)), 
         [[5,220],[6,270]]
-      )
-    )
-  })
-  
-  describe('#filter()', () => {
-    it('should filter occurrences of a sequence', () =>
-      assertS( 
-        Stream.seq([1,2,3,4,5,6], 20, 50).filter( x => !(x%2) ), 
-        [[2,70],[4,170],[6,270]]
       )
     )
   })
@@ -215,6 +265,7 @@ describe('Stream', () => {
     )
   })
   
+  
   describe('#window()', () => {
     it('should yield a sliding window of results from a sequence', () =>
       assertS( Stream.range(1, 5, 0, 20).window(3,3) , [[[1,2,3],40],[[2,3,4],60], [[3,4,5],80]] )
@@ -223,7 +274,13 @@ describe('Stream', () => {
 
   describe('#toArray()', () => {
     it('should convert a sequence to an array', () =>
-      schedule( () => assertP.deepEqual( Stream.seq([1,2,3], 0, 50).toArray(), [1,2,3] ) )
+      schedule( () => assertP.deepEqual( Stream.seq([[1],2,3,], 0, 50).toArray(), [[1],2,3] ) )
+    )
+  })
+  
+  describe('#reduceRight()', () => {
+    it('should reduce a stream from the end (== right)', () =>
+      schedule( () => assertP.deepEqual( Stream.seq([1,2,[3]], 0, 50).reduceRight((x, acc) => [...acc, x], []), [[3],2,1] ) )
     )
   })
   
@@ -250,17 +307,17 @@ describe('Stream', () => {
   describe('#combine()', () => {
     it('should combine latest occurrences from 2 sequences', () =>
       assertS( 
-        Stream.seq([1,2,3,4], 10, 10).combine( Stream.seq([10,20,30], 22,20), (x,y) => x+y ), 
+        Stream.seq([1,2,3,4], 10, 10).combineWith( Stream.seq([10,20,30], 22,20), (x,y) => x+y ), 
         [[12,22],[13,30],[14,40],[24,42],[34,62]])
     )
     
     it('should combine latest occurrences from many sequences', () =>
       assertS( 
-        Stream.combine([
+        Stream.combine(
           Stream.seq([1,2,3,4], 10, 10),
           Stream.seq([10,20,30], 22,20),
           Stream.seq([100,200,300], 34,30)
-        ]), 
+        ), 
         [ [[3,10,100],34],[[4,10,100],40],[[4,20,100],42],[[4,30,100],62],[[4,30,200],64],[[4,30,300],94] ])
     )
     
@@ -289,10 +346,15 @@ describe('Stream', () => {
         [ [[1,'a'],25], [[2,'b'],75] ] )
     )
     
-    it('should wait occurrences from 2 streams to pairwise', () =>
-      assertS( 
-        Stream.Cons(1, Stream.Cons(2, Stream.Empty)).zip( Stream.seq(['a', 'b'], 25, 50) ), 
-        [ [[1,'a'],25], [[2,'b'],75] ] )
+    it('should zip occurrences from multiple streams', () =>
+      assertS(
+        Stream.zip(
+          Stream.seq([1,[2],3,4], 0, 30),
+          Stream.seq([100,200,[300]], 10, 30),
+          Stream.seq([[1000],2000,3000], 20, 30)
+        ),
+        [ [[1,100,[1000]],20], [[[2],200,2000],50], [[3,[300],3000],80] ]
+      )
     )
   })
   
