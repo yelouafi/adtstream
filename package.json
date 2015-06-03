@@ -1,6 +1,6 @@
 {
   "name": "adtstream",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "streams based on ADTs and pure FP",
   "main": "lib/index.js",
   "browser": {
