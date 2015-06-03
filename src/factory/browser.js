@@ -33,7 +33,7 @@ utils.nextDOMEvent = function (target, event) {
 };
 
 var props = utils.$vprops = {
-  $$def     : key => el => v => el[key] = v.toString(),
+  $$def     : key => el => v => el[key] = v,
   text      : el => v => el.textContent = v.toString(),
   html      : el => v => el.innerHTML = v.toString(),
   disabled   : el => v => el.disabled = !!v,
