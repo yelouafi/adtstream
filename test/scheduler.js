@@ -23,7 +23,15 @@ Scheduler.prototype.schedule = function (task, time) {
 Scheduler.prototype.getLater = function (getter, delay, abs) {
   var time = delay + (!abs ? this.time : 0),
       task = new Promise( 
-        resolve => this.schedule( () => resolve( getter() ), time )
+        (resolve, reject) => { 
+          this.schedule( () => {
+            try {
+              resolve( getter() );
+            } catch(e) {
+              reject(e);
+            }   
+          }, time )
+        }
       );
   return task;
 }
@@ -83,7 +91,10 @@ Scheduler.prototype.seq = function(arr, delay, interval) {
     var getter = () => {
       //console.log('from ', index, 'at #', me.time)
       return index < arr.length ? 
-          Stream.Cons( arr[index], from(index+1, interval) ) : 
+          ( arr[index] !== 'error' ? 
+              Stream.Cons( arr[index], from(index+1, interval) ) : 
+              Stream.Abort('error')
+          ) :
           Stream.Empty;
     }
 
@@ -133,7 +144,7 @@ Scheduler.prototype.captureSeq = function(s) {
     var seq = [];
     s.forEach(
       v =>{  seq.push([v, this.time]) },
-      err => { seq.push(err); res(seq); },
+      err => { seq.push(['!'+err+'!', this.time]); res(seq); },
       () => { res(seq) }
     );
   });
