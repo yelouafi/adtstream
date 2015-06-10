@@ -1,4 +1,5 @@
-See [Blog Post: Promises + FP = Beautiful Streams][4]
+ADT Streams [![Build Status](https://travis-ci.org/yelouafi/adtstream.svg?branch=master)](https://travis-ci.org/yelouafi/adtstream)
+=============
 
 Streams built using the following ingredients
 
@@ -6,6 +7,8 @@ Streams built using the following ingredients
 - Algebraic Data Types (ADT) 
 
 Hence the name *ADT Streams*.
+
+See [Blog Post: Promises + FP = Beautiful Streams][4]
 
 - [Usage](#usage)
 - [Examples](#examples)
