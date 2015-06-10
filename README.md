@@ -1,4 +1,4 @@
-ADT Streams [![Build Status](https://travis-ci.org/yelouafi/adtstream.svg?branch=master)](https://travis-ci.org/yelouafi/adtstream)
+ADT Streams [![Build Status](https://travis-ci.org/yelouafi/adtstream.svg?branch=master)](https://travis-ci.org/yelouafi/adtstream) [![npm version](https://badge.fury.io/js/adtstream.svg)](http://badge.fury.io/js/adtstream)
 =============
 
 Streams built using the following ingredients
