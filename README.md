@@ -251,6 +251,6 @@ If you need to provide your own Promise support in the browser you can either
 [1]: https://babeljs.io/docs/usage/cli/
 [2]: https://github.com/jakearchibald/es6-promise
 [3]: https://kangax.github.io/compat-table/es6/
-[4]: http://tech.pro/blog/6888/promises--fp--beautiful-streams
+[4]: https://medium.com/@yelouafi/promises-fp-beautiful-streams-6f0235c5b179
 [5]: https://github.com/yelouafi/adtstream/wiki/API
 [6]: http://www.irisa.fr/espresso/Polychrony/document/tutorial.pdf
