@@ -1,6 +1,8 @@
 ADT Streams [![Build Status](https://travis-ci.org/yelouafi/adtstream.svg?branch=master)](https://travis-ci.org/yelouafi/adtstream) [![npm version](https://badge.fury.io/js/adtstream.svg)](http://badge.fury.io/js/adtstream)
 =============
 
+[![Join the chat at https://gitter.im/yelouafi/adtstream](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/yelouafi/adtstream?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Streams built using the following ingredients
 
 - Promises
