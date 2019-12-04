@@ -18,9 +18,9 @@ See [Blog Post: Promises + FP = Beautiful Streams][4]
 - [Transpiling ES6 sources](#transpiling-es6-sources)
 - [ES6 Promise polyfill](#es6-promise-polyfill)
 
-#Usage
+# Usage
 
-##Server
+## Server
 
 In the server, install from npm
 
@@ -59,7 +59,7 @@ For example here is how Streams are built from DOM events
       );
     };
 
-##Browser
+## Browser
 
 In the browser the bundle exposes a global `adts` variable, so you can use it like
 
@@ -117,7 +117,7 @@ You can add your own virtual properties using `adts.$prop(prop, handler)`
 
   
 
-#Examples
+# Examples
 
 **1- classic up down**
 
@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 ```
 
 
-#Transpiling ES6 sources
+# Transpiling ES6 sources
 
 `npm install` to install dependencies; this will install dev dependencies `Babel` for ES6 transpilation and `mocha` for unit tests
 
@@ -229,15 +229,15 @@ In the server, you can run the ES6 examples in the `examples` directory directly
 
 This will compile the code in the fly and execute it.
 
-#ES6 Promise polyfill
+# ES6 Promise polyfill
 
-##Server environments
+## Server environments
 
 The server build uses the [`es6-promise`][2] polyfill to provide support for Promises (because actual stable versions of Node don't support Promise yet).
 
 If you are using a server with native Promise support (iojs or latest Node version with --harmony flag) you can remove the first 2 lines from `src/utils.js`.
 
-##Browser environments
+## Browser environments
 
 In the browser build the polyfill is deactivated by default (see the browser field in package.json). 
 
